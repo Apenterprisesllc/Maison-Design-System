@@ -1,0 +1,75 @@
+/* ─────────────────────────────────────────────────────────────────────────
+   Maison · Animations
+   Keyframe fallbacks + reveal utility classes. GSAP handles the choreography
+   for hero / scroll-driven reveals; these are CSS-only baseline behaviors
+   so the app degrades gracefully if JS is slow to boot.
+   ───────────────────────────────────────────────────────────────────────── */
+
+@keyframes mai-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes mai-slide-up {
+  from { opacity: 0; transform: translate3d(0, 24px, 0); }
+  to   { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+
+@keyframes mai-hairline-grow {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+
+@keyframes mai-marquee {
+  from { transform: translate3d(0, 0, 0); }
+  to   { transform: translate3d(-50%, 0, 0); }
+}
+
+@keyframes mai-shimmer {
+  from { background-position: -200% 0; }
+  to   { background-position: 200% 0; }
+}
+
+@keyframes mai-blur-in {
+  from { opacity: 0; filter: blur(8px); }
+  to   { opacity: 1; filter: blur(0); }
+}
+
+@keyframes mai-draw {
+  from { stroke-dashoffset: var(--draw-length, 100); }
+  to   { stroke-dashoffset: 0; }
+}
+
+@keyframes mai-spin-dot {
+  0%   { transform: translate3d(0, 0, 0); opacity: 0; }
+  20%  { opacity: 1; }
+  80%  { opacity: 1; }
+  100% { transform: translate3d(48px, 0, 0); opacity: 0; }
+}
+
+/* ── Utility classes (pre-GSAP fallback) ───────────────────────────────── */
+.fx-fade-in   { animation: mai-fade-in var(--dur-page) var(--ease-out) both; }
+.fx-slide-up  { animation: mai-slide-up var(--dur-page) var(--ease-out) both; }
+.fx-blur-in   { animation: mai-blur-in var(--dur-reveal) var(--ease-editorial) both; }
+
+/* GSAP-managed reveal — JS sets the initial state via gsap.set().
+   We don't pre-hide with CSS so that any element without a registered
+   observer stays visible (fail-open). */
+[data-reveal],
+[data-reveal-fade] {
+  will-change: transform, opacity;
+}
+
+/* ── Reduced-motion: collapse all animation to opacity-only / instant ──── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+  [data-reveal], [data-reveal-fade] {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}

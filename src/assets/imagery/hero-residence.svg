@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 480" width="800" height="480" preserveAspectRatio="xMidYMid slice">
+  
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2A3552"></stop>
+      <stop offset="1" stop-color="#54452E"></stop>
+    </linearGradient>
+    <linearGradient id="floor" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3A2F22"></stop>
+      <stop offset="1" stop-color="#1A1410"></stop>
+    </linearGradient>
+    <linearGradient id="glow" x1="0.5" y1="0" x2="0.5" y2="1">
+      <stop offset="0" stop-color="#E8C77A" stop-opacity="0.55"></stop>
+      <stop offset="1" stop-color="#E8C77A" stop-opacity="0"></stop>
+    </linearGradient>
+    <linearGradient id="protect" x1="0" y1="1" x2="0" y2="0">
+      <stop offset="0" stop-color="#0F1E3D" stop-opacity="0.55"></stop>
+      <stop offset="0.6" stop-color="#0F1E3D" stop-opacity="0"></stop>
+    </linearGradient>
+  </defs>
+
+  
+  <rect width="800" height="320" fill="url(#sky)"></rect>
+  <rect y="320" width="800" height="160" fill="url(#floor)"></rect>
+
+  
+  <g fill="#1F1A14" opacity="0.85">
+    <rect x="50" y="120" width="50" height="240"></rect>
+    <rect x="700" y="120" width="50" height="240"></rect>
+  </g>
+  <g fill="#0F1E3D" opacity="0.6">
+    <rect x="100" y="60" width="600" height="60"></rect>
+    <rect x="100" y="60" width="600" height="60" fill="none" stroke="#C9A961" stroke-width="0.5"></rect>
+  </g>
+
+  
+  <g>
+    <rect x="160" y="140" width="120" height="200" fill="#3A4866"></rect>
+    <rect x="160" y="140" width="120" height="200" fill="url(#glow)"></rect>
+    <rect x="340" y="140" width="120" height="200" fill="#3A4866"></rect>
+    <rect x="340" y="140" width="120" height="200" fill="url(#glow)"></rect>
+    <rect x="520" y="140" width="120" height="200" fill="#3A4866"></rect>
+    <rect x="520" y="140" width="120" height="200" fill="url(#glow)"></rect>
+    <g stroke="#C9A961" stroke-width="0.5" opacity="0.7">
+      <line x1="220" y1="140" x2="220" y2="340"></line>
+      <line x1="400" y1="140" x2="400" y2="340"></line>
+      <line x1="580" y1="140" x2="580" y2="340"></line>
+      <line x1="160" y1="240" x2="640" y2="240"></line>
+    </g>
+  </g>
+
+  
+  <g opacity="0.85">
+    <circle cx="400" cy="40" r="3" fill="#E8C77A"></circle>
+    <circle cx="400" cy="40" r="14" fill="#E8C77A" opacity="0.15"></circle>
+    <line x1="400" y1="0" x2="400" y2="40" stroke="#E8C77A" stroke-width="0.4"></line>
+  </g>
+
+  
+  <g stroke="#C9A961" stroke-width="0.3" opacity="0.45">
+    <line x1="0" y1="320" x2="800" y2="320"></line>
+    <line x1="0" y1="360" x2="800" y2="360"></line>
+    <line x1="0" y1="400" x2="800" y2="400"></line>
+  </g>
+
+  
+  <g fill="#0A0A0A" opacity="0.85">
+    <ellipse cx="400" cy="320" rx="18" ry="6"></ellipse>
+    <rect x="386" y="240" width="28" height="80" rx="4"></rect>
+    <circle cx="400" cy="230" r="14"></circle>
+    <rect x="378" y="222" width="44" height="6" rx="2" fill="#C9A961"></rect>
+  </g>
+
+  
+  <rect width="800" height="480" fill="url(#protect)"></rect>
+</svg>

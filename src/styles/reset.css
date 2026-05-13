@@ -1,0 +1,32 @@
+/* ─────────────────────────────────────────────────────────────────────────
+   Maison · Reset
+   Minimal opinionated reset. Imported once at the app root.
+   ───────────────────────────────────────────────────────────────────────── */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body, #root { height: 100%; }
+
+html {
+  /* Reserve scrollbar space at all times — prevents content shifting when
+     modals/drawers set `body { overflow: hidden }` (no scrollbar collapse). */
+  scrollbar-gutter: stable;
+  /* Prevent horizontal overflow from any wide layout from triggering h-scroll
+     during animations. */
+  overflow-x: hidden;
+}
+
+html, body {
+  margin: 0;
+  background: var(--bg-page);
+  color: var(--fg-default);
+  font-family: var(--font-sans);
+  font-size: var(--size-body);
+  line-height: var(--leading-normal);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+img, svg, video { display: block; max-width: 100%; }
+button, input, select, textarea { font: inherit; color: inherit; }

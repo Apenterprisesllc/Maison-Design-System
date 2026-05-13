@@ -1,0 +1,68 @@
+/* ─────────────────────────────────────────────────────────────────────────
+   Maison · Responsive
+   Mobile-first additions to the system. Component-specific responsive
+   behaviour lives near each component; this file holds global rules.
+
+   Breakpoints
+   ----------
+   xl ≥ 1280   desktop wide
+   lg ≥ 1024   laptop
+   md ≥ 768    tablet
+   sm ≥ 480    large phone
+   xs <  480   compact phone
+   ───────────────────────────────────────────────────────────────────────── */
+
+/* Global container — generous on desktop, tighter on smaller screens */
+.container { padding-inline: var(--space-8); }
+
+@media (max-width: 1023px) {
+  .container { padding-inline: var(--space-6); }
+}
+@media (max-width: 767px) {
+  .container { padding-inline: var(--space-5); }
+}
+@media (max-width: 479px) {
+  .container { padding-inline: var(--space-4); }
+}
+
+/* Hide-on-mobile / show-on-mobile utilities */
+.mobile-only { display: none; }
+.desktop-only { display: initial; }
+
+@media (max-width: 1023px) {
+  .mobile-only  { display: initial; }
+  .desktop-only { display: none !important; }
+}
+
+/* Visually-hidden (a11y) */
+.visually-hidden {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0,0,0,0);
+  white-space: nowrap; border: 0;
+}
+
+/* Responsive type tightening — clamp() already handles displays.
+   For body copy on small screens, slightly reduce body size. */
+@media (max-width: 767px) {
+  html { font-size: 15px; }
+  p, p.lead { font-size: 15px; }
+}
+
+/* Forms / fields stack reliably on small screens */
+@media (max-width: 767px) {
+  .field { gap: 4px; }
+  .input { font-size: 16px; /* prevent iOS auto-zoom */ }
+}
+
+/* Horizontal scroll wrapper for wide tables on mobile */
+.table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.table-scroll::-webkit-scrollbar { height: 6px; }
+.table-scroll::-webkit-scrollbar-thumb {
+  background: var(--color-taupe);
+  border-radius: var(--radius-pill);
+}

@@ -1,0 +1,13 @@
+/* ─────────────────────────────────────────────────────────────────────────
+   Maison · Layout helpers
+   ───────────────────────────────────────────────────────────────────────── */
+
+.container { max-width: var(--width-content); margin: 0 auto; padding: 0 var(--space-8); }
+.prose     { max-width: var(--width-prose);   margin: 0 auto; }
+.measure   { max-width: var(--width-measure); margin: 0 auto; }
+
+.stack > * + * { margin-top: var(--space-4); }
+.stack-lg > * + * { margin-top: var(--space-8); }
+
+.row { display: flex; align-items: center; gap: var(--space-4); }
+.spacer { flex: 1; }

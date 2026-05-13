@@ -1,0 +1,143 @@
+/* ─────────────────────────────────────────────────────────────────────────
+   Maison · Design Tokens
+   Quiet luxury for residential service. Restraint is the brand.
+   These are the single source of truth — every component reads from here.
+   ───────────────────────────────────────────────────────────────────────── */
+
+:root {
+  /* ── Color · material palette ────────────────────────────────────────── */
+  --color-ink:        #0F1E3D;
+  --color-ink-700:    #1A2A4F;
+  --color-ink-500:    #354670;
+  --color-ink-300:    #6A7A99;
+
+  --color-champagne:      #C9A961;
+  --color-champagne-soft: #E4D6B0;
+  --color-champagne-deep: #A08842;
+
+  --color-cream:      #F8F5EF;
+  --color-cream-deep: #F1ECE0;
+  --color-paper:      #FFFFFF;
+
+  --color-charcoal:   #1A1A1A;
+  --color-mist:       #4A4A4A;
+  --color-mist-soft:  #8A8378;
+  --color-mist-faint: #B5AFA4;
+
+  --color-taupe:      #D9D2C5;
+  --color-taupe-soft: #ECE6D9;
+
+  /* ── Status · muted semantic ─────────────────────────────────────────── */
+  --color-status-success:    #3F6B4A;
+  --color-status-success-bg: #E8EEE7;
+  --color-status-warning:    #8A6A1F;
+  --color-status-warning-bg: #F3EBD7;
+  --color-status-danger:     #7A2E2E;
+  --color-status-danger-bg:  #F1E2DF;
+  --color-status-info:       #2E4A6B;
+  --color-status-info-bg:    #E2E8EE;
+
+  /* ── Semantic roles ──────────────────────────────────────────────────── */
+  --bg-page:        var(--color-cream);
+  --bg-surface:     var(--color-paper);
+  --bg-surface-alt: var(--color-cream-deep);
+  --bg-inverse:     var(--color-ink);
+
+  --fg-default:     var(--color-charcoal);
+  --fg-muted:       var(--color-mist);
+  --fg-faint:       var(--color-mist-soft);
+  --fg-inverse:     var(--color-cream);
+  --fg-accent:      var(--color-champagne-deep);
+
+  --border-hairline:        1px solid var(--color-taupe);
+  --border-hairline-strong: 1px solid var(--color-mist-soft);
+  --border-accent:          1px solid var(--color-champagne);
+
+  /* ── Type · families ─────────────────────────────────────────────────── */
+  --font-serif: "Fraunces", "Cormorant Garamond", "Hoefler Text", Georgia, "Times New Roman", serif;
+  --font-sans:  "Inter", "Söhne", "Helvetica Neue", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  --font-mono:  "JetBrains Mono", "SF Mono", "Menlo", monospace;
+
+  /* ── Type · scale ─────────────────────────────────────────────────────── */
+  --size-display-xl: 80px;
+  --size-display-lg: 64px;
+  --size-display-md: 48px;
+  --size-h1:         40px;
+  --size-h2:         32px;
+  --size-h3:         24px;
+  --size-h4:         20px;
+  --size-h5:         16px;
+  --size-body-lg:    18px;
+  --size-body:       16px;
+  --size-body-sm:    14px;
+  --size-caption:    13px;
+  --size-micro:      11px;
+
+  --leading-tight:   1.08;
+  --leading-snug:    1.25;
+  --leading-normal:  1.5;
+  --leading-relaxed: 1.7;
+
+  --tracking-tight:   -0.02em;
+  --tracking-normal:  0;
+  --tracking-wide:    0.04em;
+  --tracking-eyebrow: 0.16em;
+
+  /* ── Spacing · 4-based, generous jumps ───────────────────────────────── */
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  20px;
+  --space-6:  24px;
+  --space-8:  32px;
+  --space-10: 40px;
+  --space-14: 56px;
+  --space-20: 80px;
+  --space-30: 120px;
+  --space-50: 200px;
+
+  /* ── Layout ─────────────────────────────────────────────────────────── */
+  --width-prose:   720px;
+  --width-content: 1240px;
+  --width-measure: 560px;
+  --topbar-h:      64px;
+  --sidebar-w:     240px;
+
+  /* ── Radii ──────────────────────────────────────────────────────────── */
+  --radius-0:    0px;
+  --radius-1:    2px;
+  --radius-2:    4px;
+  --radius-3:    6px;
+  --radius-4:    8px;
+  --radius-pill: 9999px;
+
+  /* ── Shadow · ink-based, no coloured shadows ─────────────────────────── */
+  --shadow-1: 0 1px 3px rgba(15, 30, 61, 0.04);
+  --shadow-2: 0 2px 8px rgba(15, 30, 61, 0.06), 0 1px 2px rgba(15, 30, 61, 0.04);
+  --shadow-3: 0 12px 32px rgba(15, 30, 61, 0.10), 0 2px 6px rgba(15, 30, 61, 0.06);
+
+  /* ── Motion ─────────────────────────────────────────────────────────── */
+  --ease-out:       cubic-bezier(0.2, 0.6, 0.2, 1);
+  --ease-in:        cubic-bezier(0.4, 0, 0.6, 1);
+  --ease-soft:      cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-editorial: cubic-bezier(0.25, 0.1, 0, 1);
+
+  --dur-snap:   80ms;
+  --dur-micro:  120ms;
+  --dur-state:  200ms;
+  --dur-layout: 320ms;
+  --dur-page:   480ms;
+  --dur-reveal: 800ms;
+
+  /* ── Focus ring ──────────────────────────────────────────────────────── */
+  --ring-color: var(--color-champagne);
+  --ring-width: 2px;
+  --ring-offset: 2px;
+
+  /* ── Breakpoints (reference; CSS variables can't be used in media queries) */
+  --bp-xl: 1280px;
+  --bp-lg: 1024px;
+  --bp-md: 768px;
+  --bp-sm: 480px;
+}

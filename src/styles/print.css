@@ -1,0 +1,53 @@
+/* ─────────────────────────────────────────────────────────────────────────
+   Maison · Print
+   Only the receipt is printed. Everything else collapses. Save Receipt button
+   triggers window.print() — modern browsers offer "Save as PDF" by default.
+   ───────────────────────────────────────────────────────────────────────── */
+
+@media print {
+  /* Strip motion and effects */
+  *, *::before, *::after {
+    animation: none !important;
+    transition: none !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    filter: none !important;
+  }
+
+  body {
+    background: white !important;
+    color: black !important;
+    margin: 0;
+    padding: 0;
+  }
+
+  /* Hide global chrome */
+  header, footer, nav, button, [role="navigation"], [data-print-hide] {
+    display: none !important;
+  }
+
+  /* Show only the receipt */
+  body > *:not([data-print-receipt-root]) {
+    display: none !important;
+  }
+
+  [data-print-receipt-root] {
+    display: block !important;
+    position: relative !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 24px !important;
+    background: white !important;
+  }
+
+  [data-print-receipt] {
+    border: 1px solid #999 !important;
+    border-radius: 0 !important;
+    page-break-inside: avoid;
+  }
+
+  /* Image off — not needed in print and slows rendering */
+  img, svg.no-print {
+    display: none !important;
+  }
+}
