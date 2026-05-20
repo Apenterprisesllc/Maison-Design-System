@@ -1,5 +1,5 @@
-import { useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { useRef, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useGSAP } from '@gsap/react';
@@ -8,8 +8,10 @@ import {
   CountUp,
   Eyebrow,
   Hairline,
-  MaisonMark,
+  Icon,
+  BrandMark,
   Marquee,
+  Modal,
   Reveal,
   SplitHeading,
   useLucide,
@@ -25,7 +27,14 @@ export function Landing() {
   const pinSectionRef = useRef<HTMLDivElement>(null);
   const pinFrameRef = useRef<HTMLDivElement>(null);
   const mainRef = useReveal<HTMLElement>({ y: 28, stagger: 0.08, rootMargin: '0px 0px -8% 0px' });
+  const [scheduleOpen, setScheduleOpen] = useState(false);
+  const navigate = useNavigate();
   useLucide();
+
+  const pickTrack = (track: 'residential' | 'commercial') => {
+    setScheduleOpen(false);
+    navigate(`/sign-in/resident?track=${track}`);
+  };
 
   useGSAP(() => {
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -92,7 +101,7 @@ export function Landing() {
           borderBottom: '1px solid var(--color-taupe)',
           position: 'sticky',
           top: 0,
-          background: 'rgba(248, 245, 239, 0.85)',
+          background: 'rgba(244, 247, 250, 0.85)',
           backdropFilter: 'blur(12px)',
           zIndex: 20,
         }}
@@ -107,19 +116,9 @@ export function Landing() {
             border: 0,
             color: 'var(--color-charcoal)',
           }}
-          aria-label="Maison home"
+          aria-label="AP Enterprises home"
         >
-          <MaisonMark size={26} />
-          <span
-            style={{
-              fontFamily: 'var(--font-serif)',
-              fontWeight: 400,
-              fontSize: 18,
-              letterSpacing: '0.01em',
-            }}
-          >
-            Maison
-          </span>
+          <BrandMark size={40} />
         </Link>
         <div style={{ flex: 1 }} />
         <nav
@@ -189,9 +188,9 @@ export function Landing() {
                 className="lead"
                 style={{ color: 'var(--color-mist)', maxWidth: 500, margin: 0, fontSize: 17 }}
               >
-                Maison is a private members service for luxury residential communities. Window
-                service, deep cleaning, valet, landscaping — arranged on your calendar, attended
-                to by a single building concierge.
+                AP Enterprises is a private members service for luxury residential communities.
+                Window service, deep cleaning, valet, landscaping — arranged on your calendar,
+                attended to by a single building concierge.
               </p>
             </Reveal>
 
@@ -205,11 +204,14 @@ export function Landing() {
                   flexWrap: 'wrap',
                 }}
               >
-                <Link to="/sign-in/resident" style={{ border: 0, textDecoration: 'none' }}>
-                  <Button variant="primary" size="lg" iconAfter="arrow-right">
-                    Resident Sign In
-                  </Button>
-                </Link>
+                <Button
+                  variant="primary"
+                  size="lg"
+                  iconAfter="arrow-right"
+                  onClick={() => setScheduleOpen(true)}
+                >
+                  Schedule Your Service
+                </Button>
                 <Link to="/sign-in/manager" style={{ border: 0, textDecoration: 'none' }}>
                   <Button variant="secondary" size="lg">
                     For Property Managers
@@ -229,7 +231,7 @@ export function Landing() {
                   lineHeight: 1.65,
                 }}
               >
-                Memberships are extended through the building. Residents of Maison-stewarded
+                Memberships are extended through the building. Residents of AP-stewarded
                 properties receive credentials at move-in.
               </p>
             </Reveal>
@@ -266,7 +268,7 @@ export function Landing() {
                   position: 'absolute',
                   inset: 0,
                   background:
-                    'linear-gradient(180deg, rgba(15,30,61,0) 45%, rgba(15,30,61,0.55) 100%)',
+                    'linear-gradient(180deg, rgba(10,10,10,0) 45%, rgba(10,10,10,0.55) 100%)',
                   pointerEvents: 'none',
                 }}
               />
@@ -311,7 +313,7 @@ export function Landing() {
                   fontSize: 11,
                   letterSpacing: '0.18em',
                   textTransform: 'uppercase',
-                  color: 'rgba(248,245,239,0.85)',
+                  color: 'rgba(244,247,250,0.85)',
                   display: 'flex',
                   alignItems: 'center',
                   gap: 8,
@@ -449,7 +451,7 @@ export function Landing() {
                 {
                   n: '01',
                   h: 'Stewardship begins at move-in.',
-                  p: 'The building enrols a residence. Maison credentials arrive with the keys. Your standing visit cadence is set with the concierge in twenty minutes.',
+                  p: 'The building enrols a residence. AP Enterprises credentials arrive with the keys. Your standing visit cadence is set with the concierge in twenty minutes.',
                 },
                 {
                   n: '02',
@@ -537,7 +539,7 @@ export function Landing() {
             className="pin-grid"
           >
             <div>
-              <Eyebrow color="rgba(248,245,239,0.7)">What it looks like</Eyebrow>
+              <Eyebrow color="rgba(244,247,250,0.7)">What it looks like</Eyebrow>
               <h2
                 className="display-md"
                 style={{
@@ -559,7 +561,7 @@ export function Landing() {
                 style={{
                   fontFamily: 'var(--font-sans)',
                   fontSize: 15,
-                  color: 'rgba(248,245,239,0.78)',
+                  color: 'rgba(244,247,250,0.78)',
                   lineHeight: 1.65,
                   margin: 0,
                   maxWidth: 420,
@@ -577,7 +579,7 @@ export function Landing() {
                 width: '100%',
                 aspectRatio: '16 / 10',
                 overflow: 'hidden',
-                border: '1px solid rgba(201,169,97,0.3)',
+                border: '1px solid rgba(196,151,62,0.3)',
                 borderRadius: 4,
               }}
             >
@@ -693,7 +695,7 @@ export function Landing() {
             >
               "
             </div>
-            <Eyebrow color="rgba(248,245,239,0.7)">From Residents</Eyebrow>
+            <Eyebrow color="rgba(244,247,250,0.7)">From Residents</Eyebrow>
             <SplitHeading
               as="blockquote"
               onScroll
@@ -720,7 +722,7 @@ export function Landing() {
                   alignItems: 'center',
                   gap: 16,
                   paddingTop: 16,
-                  borderTop: '1px solid rgba(201,169,97,0.35)',
+                  borderTop: '1px solid rgba(196,151,62,0.35)',
                   maxWidth: 600,
                 }}
               >
@@ -740,7 +742,7 @@ export function Landing() {
                       fontSize: 12,
                       letterSpacing: '0.08em',
                       textTransform: 'uppercase',
-                      color: 'rgba(248,245,239,0.6)',
+                      color: 'rgba(244,247,250,0.6)',
                       marginTop: 4,
                     }}
                   >
@@ -843,7 +845,7 @@ export function Landing() {
                     left: 16,
                     bottom: 16,
                     padding: '6px 12px',
-                    background: 'rgba(15, 30, 61, 0.6)',
+                    background: 'rgba(10, 10, 10, 0.6)',
                     backdropFilter: 'blur(6px)',
                     color: 'var(--color-cream)',
                     fontFamily: 'var(--font-sans)',
@@ -874,7 +876,7 @@ export function Landing() {
             className="display-md"
             style={{ marginTop: 14, marginInline: 'auto', maxWidth: 760 }}
           >
-            If your building stewards with Maison, your access is already pending.
+            If your building stewards with AP Enterprises, your access is already pending.
           </h2>
           <div
             style={{
@@ -893,11 +895,14 @@ export function Landing() {
               flexWrap: 'wrap',
             }}
           >
-            <Link to="/sign-in/resident" style={{ border: 0, textDecoration: 'none' }}>
-              <Button variant="primary" size="lg" iconAfter="arrow-right">
-                Resident Sign In
-              </Button>
-            </Link>
+            <Button
+              variant="primary"
+              size="lg"
+              iconAfter="arrow-right"
+              onClick={() => setScheduleOpen(true)}
+            >
+              Schedule Your Service
+            </Button>
             <Link to="/sign-in/manager" style={{ border: 0, textDecoration: 'none' }}>
               <Button variant="secondary" size="lg">
                 For Property Managers
@@ -907,11 +912,17 @@ export function Landing() {
         </section>
       </main>
 
+      <ScheduleTrackModal
+        open={scheduleOpen}
+        onClose={() => setScheduleOpen(false)}
+        onPick={pickTrack}
+      />
+
       {/* ── FOOTER ────────────────────────────────────────────────────── */}
       <footer
         style={{
           background: 'var(--color-ink)',
-          color: 'rgba(248, 245, 239, 0.7)',
+          color: 'rgba(244, 247, 250, 0.7)',
           padding: 'clamp(48px, 6vw, 72px) clamp(20px, 4vw, 56px) 28px',
         }}
       >
@@ -926,13 +937,13 @@ export function Landing() {
           className="footer-grid"
         >
           <div>
-            <MaisonMark size={32} dark />
+            <BrandMark size={56} dark />
             <p
               style={{
                 fontFamily: 'var(--font-serif)',
                 fontSize: 16,
                 marginTop: 16,
-                color: 'rgba(248,245,239,0.85)',
+                color: 'rgba(244,247,250,0.85)',
                 lineHeight: 1.6,
                 maxWidth: 320,
               }}
@@ -955,19 +966,19 @@ export function Landing() {
             maxWidth: 1440,
             margin: '48px auto 0',
             paddingTop: 20,
-            borderTop: '1px solid rgba(201,169,97,0.25)',
+            borderTop: '1px solid rgba(196,151,62,0.25)',
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
             fontFamily: 'var(--font-sans)',
             fontSize: 12,
             letterSpacing: '0.04em',
-            color: 'rgba(248,245,239,0.55)',
+            color: 'rgba(244,247,250,0.55)',
             flexWrap: 'wrap',
             gap: 16,
           }}
         >
-          <span>© Maison · {new Date().getFullYear()}</span>
+          <span>© AP Enterprises · {new Date().getFullYear()}</span>
           <span>By invitation · Members only</span>
         </div>
       </footer>
@@ -1031,6 +1042,156 @@ function Stat({ to, sup, label }: { to: number; sup?: string; label: string }) {
   );
 }
 
+function ScheduleTrackModal({
+  open,
+  onClose,
+  onPick,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onPick: (track: 'residential' | 'commercial') => void;
+}) {
+  return (
+    <Modal
+      open={open}
+      onClose={onClose}
+      eyebrow="Schedule a Service"
+      title="Which kind of property do you steward?"
+      width={620}
+    >
+      <p
+        style={{
+          fontFamily: 'var(--font-sans)',
+          fontSize: 14,
+          color: 'var(--color-mist)',
+          lineHeight: 1.65,
+          margin: '0 0 24px',
+          maxWidth: 480,
+        }}
+      >
+        Choose the track that matches the residence or facility. The catalogue and
+        scheduling cadence will adjust to suit.
+      </p>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(2, 1fr)',
+          gap: 16,
+        }}
+        className="track-grid"
+      >
+        <TrackCard
+          icon="home"
+          label="Residencial"
+          description="Private residences, condos, and luxury homes. Recurring or on-demand."
+          onClick={() => onPick('residential')}
+        />
+        <TrackCard
+          icon="building-2"
+          label="Comercial"
+          description="Offices, restaurants, hotels, Airbnb, post-construction, and events."
+          onClick={() => onPick('commercial')}
+        />
+      </div>
+      <style>{`
+        @media (max-width: 560px) {
+          .track-grid { grid-template-columns: 1fr !important; }
+        }
+      `}</style>
+    </Modal>
+  );
+}
+
+function TrackCard({
+  icon,
+  label,
+  description,
+  onClick,
+}: {
+  icon: string;
+  label: string;
+  description: string;
+  onClick: () => void;
+}) {
+  const [hover, setHover] = useState(false);
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      style={{
+        textAlign: 'left',
+        cursor: 'pointer',
+        background: hover ? 'rgba(196,151,62,0.06)' : 'var(--bg-surface)',
+        border: '1px solid ' + (hover ? 'var(--color-champagne)' : 'var(--color-taupe)'),
+        borderRadius: 6,
+        padding: '22px 22px 20px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 12,
+        transition:
+          'background-color var(--dur-state) var(--ease-out), border-color var(--dur-state) var(--ease-out), transform var(--dur-snap) var(--ease-out)',
+        transform: hover ? 'translateY(-2px)' : 'translateY(0)',
+      }}
+    >
+      <span
+        style={{
+          width: 40,
+          height: 40,
+          borderRadius: 4,
+          background: 'var(--color-ink)',
+          color: 'var(--color-cream)',
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <Icon name={icon} size={20} />
+      </span>
+      <span
+        style={{
+          fontFamily: 'var(--font-serif)',
+          fontWeight: 400,
+          fontSize: 22,
+          lineHeight: 1.15,
+          color: 'var(--color-charcoal)',
+          letterSpacing: '-0.01em',
+        }}
+      >
+        {label}
+      </span>
+      <span
+        style={{
+          fontFamily: 'var(--font-sans)',
+          fontSize: 13,
+          color: 'var(--color-mist)',
+          lineHeight: 1.55,
+        }}
+      >
+        {description}
+      </span>
+      <span
+        style={{
+          marginTop: 'auto',
+          paddingTop: 8,
+          fontFamily: 'var(--font-sans)',
+          fontSize: 11,
+          letterSpacing: '0.16em',
+          textTransform: 'uppercase',
+          color: 'var(--color-champagne-deep)',
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 6,
+        }}
+      >
+        Continue
+        <Icon name="arrow-right" size={14} />
+      </span>
+    </button>
+  );
+}
+
 function FooterCol({ heading, links }: { heading: string; links: string[] }) {
   return (
     <div>
@@ -1052,7 +1213,7 @@ function FooterCol({ heading, links }: { heading: string; links: string[] }) {
             <a
               href="#"
               style={{
-                color: 'rgba(248,245,239,0.75)',
+                color: 'rgba(244,247,250,0.75)',
                 fontFamily: 'var(--font-sans)',
                 fontSize: 14,
                 textDecoration: 'none',

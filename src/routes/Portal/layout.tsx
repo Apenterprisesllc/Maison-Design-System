@@ -1,9 +1,19 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import gsap from 'gsap';
 import { ToastProvider } from '../../components';
 import { PortalProvider } from './context';
 import { ResidentChrome } from './ResidentChrome';
+import type { ClientTrack } from './types';
+
+function resolveTrack(stateTrack: unknown): ClientTrack {
+  if (stateTrack === 'commercial' || stateTrack === 'residential') return stateTrack;
+  if (typeof window !== 'undefined') {
+    const stored = window.sessionStorage.getItem('apTrack');
+    if (stored === 'commercial' || stored === 'residential') return stored;
+  }
+  return 'residential';
+}
 
 function PortalShell() {
   const navigate = useNavigate();
@@ -42,8 +52,22 @@ function PortalShell() {
  * across nested route navigations and resets on full unmount (sign-out).
  */
 export function PortalLayout() {
+  const location = useLocation();
+  const initialTrack = useMemo<ClientTrack>(
+    () => resolveTrack((location.state as { track?: unknown } | null)?.track),
+    // Only re-resolve on first mount; subsequent intra-portal navigations
+    // shouldn't reset the track.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  );
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    window.sessionStorage.setItem('apTrack', initialTrack);
+  }, [initialTrack]);
+
   return (
-    <PortalProvider>
+    <PortalProvider initialTrack={initialTrack}>
       <ToastProvider>
         <PortalShell />
       </ToastProvider>

@@ -1,10 +1,12 @@
-# Maison
+# AP Enterprises · Members
 
 > Quiet luxury for residential service. Editorial restraint, not SaaS energy.
 
-Maison is a premium service-booking platform for luxury residential communities in the United States — condominium towers, gated communities, high-rise associations, and managed HOAs. The product gives property managers a curated, on-demand service catalogue (pressure washing, deep cleaning, window service, handyman, valet, landscaping) and gives residents a private members portal to book those services on a live calendar against their unit.
+AP Enterprises is a premium service-booking platform for luxury residential communities in South Florida — condominium towers, gated communities, high-rise associations, and managed HOAs. The product gives property managers a curated, on-demand service catalogue (pressure washing, deep cleaning, window service, handyman, valet, landscaping) and gives residents a private members portal to book those services on a live calendar against their unit.
 
 The brand reference point is the **digital equivalent of a Four Seasons or Aman concierge desk**. Restrained. Confident. Quietly expensive. The product is *infrastructure for stewardship*, not a "platform that supercharges your community."
+
+> **Note on origins.** This codebase was first built as the *Maison* design system. The architecture, voice, primitives, and motion remain intact. The brand identity (palette, name, wordmarks) is now AP Enterprises. See `CLAUDE.md` and `ap-brand/` for the swap details and source-of-truth brand documentation.
 
 ---
 
@@ -33,7 +35,7 @@ npm run format        # Prettier
 
 ```
 /                          Landing  (two CTAs: Resident · Operations)
-├── /sign-in/resident      Sign in as a member of a Maison building
+├── /sign-in/resident      Sign in as a member of an AP-stewarded building
 │   └── /portal            Resident portal (catalogue → book → confirm → account)
 └── /sign-in/manager       Sign in as a property manager
     └── /ops               Operations dashboard (pipeline · bookings · residences · reports)
@@ -46,7 +48,7 @@ Both portal and ops are single-page experiences inside one app. The landing page
 ## Source layout
 
 ```
-maison/
+ap-enterprises-members/
 ├── public/
 │   ├── fonts/                 Self-hosted Fraunces (36) + Inter (54) TTFs
 │   └── monogram.svg           Favicon
@@ -63,7 +65,7 @@ maison/
 │   │   ├── tokens.css         All design tokens (CSS custom properties)
 │   │   ├── reset.css
 │   │   ├── typography.css     h1–h5, .display-*, .eyebrow, .lead, .metric
-│   │   ├── components.css     .card, .btn-*, .field, .pill-*
+│   │   ├── components.css     .card, .btn-*, .field, .pill-*, .btn--ap-gold
 │   │   └── layout.css         .container, .prose, .stack, .row
 │   ├── components/            Shared React primitives
 │   │   ├── Button.tsx
@@ -72,7 +74,7 @@ maison/
 │   │   ├── Eyebrow.tsx
 │   │   ├── Hairline.tsx
 │   │   ├── Metric.tsx
-│   │   ├── MaisonMark.tsx
+│   │   ├── BrandMark.tsx
 │   │   ├── Icon.tsx
 │   │   └── index.ts
 │   ├── hooks/
@@ -101,6 +103,8 @@ maison/
 │           ├── BookingsTable.tsx
 │           ├── Residences.tsx
 │           └── Reports.tsx
+├── ap-brand/                  Brand source-of-truth docs (copied from AP Enterprises site)
+├── CLAUDE.md                  Context for AI agents touching this repo
 ├── index.html                 Vite entry HTML
 ├── package.json
 ├── tsconfig.json              References tsconfig.app + tsconfig.node
@@ -119,7 +123,7 @@ maison/
 | Add a screen in the resident flow | `src/routes/Portal/` + wire into `Portal/index.tsx` |
 | Add a screen in the manager dashboard | `src/routes/Ops/` + wire into `Ops/index.tsx` |
 | Add a new top-level route | `src/routes/` + register in `App.tsx` |
-| Swap photography | `src/assets/imagery/` |
+| Swap photography | `src/assets/imagery/` or wire AP media from `ap-brand/` |
 
 ---
 
@@ -136,7 +140,7 @@ The portal uses primitives from `src/components/`. The ops dashboard has its own
 
 ## CONTENT FUNDAMENTALS
 
-How Maison writes. This is not a style guide for marketing copy — it is the *operating voice* of the product, applied to button labels, empty states, error messages, calendar events, and email confirmations.
+How AP Enterprises writes. This is not a style guide for marketing copy — it is the *operating voice* of the product, applied to button labels, empty states, error messages, calendar events, and email confirmations.
 
 ### Voice
 
@@ -166,7 +170,7 @@ How Maison writes. This is not a style guide for marketing copy — it is the *o
 
 ### "I" vs "you"
 
-The product addresses the resident in the second person (*"Your next visit is Thursday"*) and refers to itself in the third person, by name (*"Maison will confirm with your building."*). The first person is reserved for the resident's own voice: notes, preferences, instructions to the attendant.
+The product addresses the resident in the second person (*"Your next visit is Thursday"*) and refers to itself in the third person, by name (*"AP Enterprises will confirm with your building."*). The first person is reserved for the resident's own voice: notes, preferences, instructions to the attendant.
 
 ### Punctuation & casing
 
@@ -180,17 +184,17 @@ The product addresses the resident in the second person (*"Your next visit is Th
 
 ## VISUAL FOUNDATIONS
 
-The whole brand reduces to four ideas: **navy and cream**, **serif headlines beside refined sans body**, **hairline gold accents**, **magazine whitespace**.
+The whole brand reduces to four ideas: **black and pearl-grey**, **serif headlines beside refined sans body**, **hairline gold accents**, **magazine whitespace**.
 
-All tokens are defined in `src/styles/tokens.css` as CSS custom properties. The rules below describe how to *use* them.
+All tokens are defined in `src/styles/tokens.css` as CSS custom properties. The rules below describe how to *use* them. The full AP Enterprises brand reference lives in `ap-brand/`.
 
 ### Color
 
 The palette is short, named after material references, and used by **role** rather than by hue.
 
-- **Ink** `#0F1E3D` — Deep navy. Primary surfaces, headlines, primary buttons.
-- **Champagne** `#C9A961` — Gold accent. **Only** as hairline rules, button outlines, small emphasis, and a single character (`—`). **Never** as a fill block, gradient, or large surface.
-- **Cream** `#F8F5EF` — Page background.
+- **Ink** `#0A0A0A` — Deep black. Primary surfaces, headlines, primary buttons.
+- **Champagne** `#C4973E` — Gold accent. **By default**, used only as hairline rules, button outlines, small emphasis, and a single character (`—`). Gold-as-fill is available via the opt-in `.btn--ap-gold` utility for explicit AP-style CTAs.
+- **Cream** `#F4F7FA` — Page background.
 - **Paper** `#FFFFFF` — Card surfaces.
 - **Charcoal** `#1A1A1A` — Body text.
 - **Mist** `#4A4A4A` — Secondary text.
@@ -198,7 +202,7 @@ The palette is short, named after material references, and used by **role** rath
 
 Semantic colours (success, warning, error, info) are muted, desaturated, and read as ink before they read as colour.
 
-**Forbidden:** bright primaries, neon, electric blues, lime, purple-pink gradients, any background gradient, gold as a fill.
+**Forbidden:** bright primaries, neon, electric blues, lime, purple-pink gradients, any background gradient (except the opt-in AP gold CTA).
 
 ### Type
 
@@ -217,6 +221,7 @@ Semantic colours (success, warning, error, info) are muted, desaturated, and rea
 - Easings: `cubic-bezier(0.2, 0.6, 0.2, 1)` for entrances, `cubic-bezier(0.4, 0, 0.6, 1)` for exits.
 - Durations: 120 / 200 / 320 / 480ms.
 - **Never** transform-scale on hover. Position and size animations are reserved for entering and exiting elements.
+- GSAP handles choreography; keyframes prefixed `mai-` are legacy and must not be renamed (referenced inline from `Spinner`, `Toast`, `Skeleton`, `ServiceCard`).
 
 ### Iconography
 
@@ -226,11 +231,9 @@ Lucide at `stroke-width: 1.5`. Never filled. Never emoji. Loaded as a CDN script
 
 ## Open questions
 
-These were resolved by judgement. Confirm or override before shipping:
+These remain for the AP Enterprises stakeholder to resolve before shipping:
 
-1. **Brand name.** "Maison" — single word, French, residential, premium ring. Confirm or replace.
-2. **Fonts.** Fraunces + Inter loaded from `public/fonts/`. Fraunces 72pt and Inter 18pt are wired in `fonts.css`; the Soft / SuperSoft and 24pt / 28pt cuts are on disk if needed.
-3. **Status palette.** Four muted status colours extending the brief.
-4. **Operations layout.** Density pattern is mine; review.
-5. **Photography.** Placeholders only — replace before launch.
-6. **Lucide as icon system.** Substituted.
+1. **Logo wordmark.** ✅ Resolved. `public/logo.webp` is the official AP Enterprises mark (laurel + "AP" + "ENTERPRISES") wired into `BrandMark` and `OpsMark`. Legacy "M" monograms in `src/assets/logos/` remain as fallbacks.
+2. **Photography.** Imagery placeholders in `src/assets/imagery/`. AP has a full photo/video library catalogued in `ap-brand/imagery.md` and `CLAUDE.md`.
+3. **Contact details.** Footer + HelpPopover use `concierge@apenterprises.example` placeholder. Confirm real address with the client.
+4. **Domain / favicon.** No domain yet; favicon still uses the M-monogram SVG with AP colours.

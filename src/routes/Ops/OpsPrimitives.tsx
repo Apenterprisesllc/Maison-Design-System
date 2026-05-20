@@ -2,8 +2,8 @@ import { useState } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
 
 /**
- * Operations-local primitives. Same brand language as @maison/react, tightened
- * ~30% in padding and type sizes for back-office density.
+ * Operations-local primitives. Same brand language as @ap-enterprises/react,
+ * tightened ~30% in padding and type sizes for back-office density.
  */
 
 export type OpsPillTone = 'success' | 'warning' | 'danger' | 'info' | 'neutral';
@@ -17,22 +17,15 @@ const TONES: Record<OpsPillTone, { bg: string; fg: string }> = {
   neutral: { bg: '#ECE6D9', fg: '#4A4A4A' },
 };
 
-export function OpsMark({ size = 22 }: { size?: number }) {
+export function OpsMark({ size = 32 }: { size?: number }) {
+  // Renders the AP Enterprises logo at the given height; width scales naturally.
   return (
-    <svg viewBox="0 0 80 80" width={size} height={size} aria-hidden="true">
-      <text
-        x="40"
-        y="58"
-        textAnchor="middle"
-        fontFamily="Fraunces, serif"
-        fontWeight="300"
-        fontSize="60"
-        fill="#F8F5EF"
-      >
-        M
-      </text>
-      <line x1="22" y1="66" x2="58" y2="66" stroke="#C9A961" strokeWidth="1" />
-    </svg>
+    <img
+      src="/logo.webp"
+      alt="AP Enterprises"
+      height={size}
+      style={{ height: size, width: 'auto', display: 'block' }}
+    />
   );
 }
 
@@ -55,7 +48,7 @@ export function OpsEyebrow({ children, color = '#8A8378' }: { children: ReactNod
 
 export function OpsHairline({
   width = 32,
-  color = '#C9A961',
+  color = '#C4973E',
   margin = '10px 0',
 }: {
   width?: number | string;
@@ -134,19 +127,19 @@ export function OpsButton({
   const variants: Record<OpsButtonVariant, CSSProperties> = {
     primary: {
       ...base,
-      background: hover ? '#0A1530' : '#0F1E3D',
-      color: '#F8F5EF',
-      borderColor: hover ? '#0A1530' : '#0F1E3D',
+      background: hover ? '#1A1A1A' : '#0A0A0A',
+      color: '#F4F7FA',
+      borderColor: hover ? '#1A1A1A' : '#0A0A0A',
     },
     secondary: {
       ...base,
-      background: hover ? 'rgba(201,169,97,0.10)' : 'transparent',
+      background: hover ? 'rgba(196,151,62,0.10)' : 'transparent',
       color: '#1A1A1A',
-      borderColor: '#C9A961',
+      borderColor: '#C4973E',
     },
     ghost: {
       ...base,
-      background: hover ? 'rgba(15,30,61,0.04)' : 'transparent',
+      background: hover ? 'rgba(10,10,10,0.04)' : 'transparent',
       color: '#1A1A1A',
       borderColor: '#D9D2C5',
     },
@@ -205,7 +198,7 @@ export function OpsCard({ children, padding = 20, style = {} }: OpsCardProps) {
         background: '#FFFFFF',
         border: '1px solid #D9D2C5',
         borderRadius: 8,
-        boxShadow: '0 1px 3px rgba(15,30,61,0.04)',
+        boxShadow: '0 1px 3px rgba(10,10,10,0.04)',
         padding,
         ...style,
       }}
@@ -241,7 +234,7 @@ export function Kpi({ label, value, sup, delta, deltaTone = 'success' }: KpiProp
         >
           {value}
           {sup && (
-            <span style={{ fontSize: 18, color: '#A08842', marginLeft: 3 }}>{sup}</span>
+            <span style={{ fontSize: 18, color: '#A67C2E', marginLeft: 3 }}>{sup}</span>
           )}
         </div>
         {delta && (

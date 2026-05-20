@@ -84,7 +84,7 @@ export function Confirmation() {
   async function onShare() {
     if (!booking) return;
     const result = await share({
-      title: `${booking.serviceName} · Maison`,
+      title: `${booking.serviceName} · AP Enterprises`,
       text: arrival,
       url: window.location.href,
     });

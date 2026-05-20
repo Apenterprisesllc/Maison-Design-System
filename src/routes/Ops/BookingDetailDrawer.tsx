@@ -240,7 +240,7 @@ function Timeline({ status }: { status: BookingStatus }) {
                   : active
                     ? 'var(--color-champagne)'
                     : 'var(--color-taupe)',
-                border: active ? '2px solid rgba(201,169,97,0.2)' : 0,
+                border: active ? '2px solid rgba(196,151,62,0.2)' : 0,
                 boxSizing: 'content-box',
                 flexShrink: 0,
               }}

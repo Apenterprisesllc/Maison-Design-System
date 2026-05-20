@@ -101,7 +101,7 @@ export function Drawer({
         style={{
           position: 'absolute',
           inset: 0,
-          background: 'rgba(15, 30, 61, 0.45)',
+          background: 'rgba(10, 10, 10, 0.45)',
           backdropFilter: 'blur(4px)',
           WebkitBackdropFilter: 'blur(4px)',
           opacity: open ? 1 : 0,

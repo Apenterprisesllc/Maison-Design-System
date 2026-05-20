@@ -260,7 +260,7 @@ function Column({
           border: isOver
             ? '1px dashed var(--color-champagne)'
             : '1px dashed transparent',
-          background: isOver ? 'rgba(201,169,97,0.06)' : 'transparent',
+          background: isOver ? 'rgba(196,151,62,0.06)' : 'transparent',
           transition:
             'background-color var(--dur-state) var(--ease-out), border-color var(--dur-state) var(--ease-out)',
         }}
@@ -331,8 +331,8 @@ function PipelineCardVisual({
         borderRadius: 6,
         padding: '12px 14px',
         boxShadow: dragging
-          ? '0 12px 28px rgba(15,30,61,0.18), 0 2px 6px rgba(15,30,61,0.10)'
-          : '0 1px 3px rgba(15,30,61,0.04)',
+          ? '0 12px 28px rgba(10,10,10,0.18), 0 2px 6px rgba(10,10,10,0.10)'
+          : '0 1px 3px rgba(10,10,10,0.04)',
         transition:
           'border-color 200ms ease, box-shadow 200ms ease, transform 200ms ease',
         transform: dragging ? 'translateY(-2px) rotate(-0.5deg)' : 'translateY(0)',
@@ -341,15 +341,15 @@ function PipelineCardVisual({
       }}
       onMouseEnter={(e) => {
         if (dragging) return;
-        e.currentTarget.style.borderColor = '#C9A961';
+        e.currentTarget.style.borderColor = '#C4973E';
         e.currentTarget.style.boxShadow =
-          '0 6px 16px rgba(15,30,61,0.08), 0 1px 3px rgba(15,30,61,0.06)';
+          '0 6px 16px rgba(10,10,10,0.08), 0 1px 3px rgba(10,10,10,0.06)';
         e.currentTarget.style.transform = 'translateY(-2px)';
       }}
       onMouseLeave={(e) => {
         if (dragging) return;
         e.currentTarget.style.borderColor = '#D9D2C5';
-        e.currentTarget.style.boxShadow = '0 1px 3px rgba(15,30,61,0.04)';
+        e.currentTarget.style.boxShadow = '0 1px 3px rgba(10,10,10,0.04)';
         e.currentTarget.style.transform = 'translateY(0)';
       }}
     >

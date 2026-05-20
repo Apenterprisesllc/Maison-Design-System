@@ -96,7 +96,7 @@ export function Modal({
         style={{
           position: 'absolute',
           inset: 0,
-          background: 'rgba(15, 30, 61, 0.55)',
+          background: 'rgba(10, 10, 10, 0.55)',
           backdropFilter: 'blur(8px)',
           WebkitBackdropFilter: 'blur(8px)',
           opacity: open ? 1 : 0,

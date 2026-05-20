@@ -198,7 +198,7 @@ export function CommandPalette() {
         style={{
           position: 'absolute',
           inset: 0,
-          background: 'rgba(15, 30, 61, 0.5)',
+          background: 'rgba(10, 10, 10, 0.5)',
           backdropFilter: 'blur(6px)',
           WebkitBackdropFilter: 'blur(6px)',
           opacity: paletteOpen ? 1 : 0,
@@ -315,7 +315,7 @@ export function CommandPalette() {
             <kbd style={{ ...kbdStyle, marginLeft: 16 }}>Esc</kbd>
             <span style={{ marginLeft: 8 }}>close</span>
           </span>
-          <span style={{ fontFamily: 'var(--font-serif)' }}>Maison Operations</span>
+          <span style={{ fontFamily: 'var(--font-serif)' }}>AP Enterprises Operations</span>
         </div>
       </div>
     </div>,

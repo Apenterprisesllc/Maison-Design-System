@@ -1,5 +1,5 @@
 /* ─────────────────────────────────────────────────────────────────────────
-   Maison · Animations
+   AP Enterprises · Animations
    Keyframe fallbacks + reveal utility classes. GSAP handles the choreography
    for hero / scroll-driven reveals; these are CSS-only baseline behaviors
    so the app degrades gracefully if JS is slow to boot.

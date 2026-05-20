@@ -10,7 +10,7 @@ export const TESTIMONIALS: Testimonial[] = [
   {
     id: 't1',
     quote:
-      'Maison handles things the way the building always should have. The valet is at the door, the service is in the residence, and I never see the seam.',
+      'AP Enterprises handles things the way the building always should have. The valet is at the door, the service is in the residence, and I never see the seam.',
     attribution: 'Eleanor Ashcombe',
     role: 'Resident · Member since 2024',
     building: 'The Arden',

@@ -62,7 +62,7 @@ export function BookingsTable() {
       { header: 'Charge', accessor: (b) => b.price },
       { header: 'Note', accessor: (b) => b.note ?? '' },
     ]);
-    downloadCsv(`maison-bookings-${Date.now()}.csv`, csv);
+    downloadCsv(`apenterprises-bookings-${Date.now()}.csv`, csv);
     toast.success(`${filtered.length} bookings exported.`);
   }
 
@@ -172,7 +172,7 @@ export function BookingsTable() {
                 fontSize: 13,
                 color: active ? '#1A1A1A' : '#8A8378',
                 fontWeight: active ? 500 : 400,
-                borderBottom: active ? '1px solid #C9A961' : '1px solid transparent',
+                borderBottom: active ? '1px solid #C4973E' : '1px solid transparent',
                 marginBottom: -1,
                 whiteSpace: 'nowrap',
                 transition: 'color var(--dur-state) var(--ease-out), border-color var(--dur-state) var(--ease-out)',
@@ -235,7 +235,7 @@ export function BookingsTable() {
                     background: i % 2 === 1 ? 'rgba(241,236,224,0.35)' : 'transparent',
                     transition: 'background-color var(--dur-state) var(--ease-out)',
                   }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(201,169,97,0.06)')}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(196,151,62,0.06)')}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.background =
                       i % 2 === 1 ? 'rgba(241,236,224,0.35)' : 'transparent';

@@ -11,11 +11,20 @@ export interface NewBookingDraft {
   note?: string;
 }
 
+export type NewUnitInput = Omit<OpsUnit, 'visits' | 'since'> &
+  Partial<Pick<OpsUnit, 'visits' | 'since'>>;
+
 export interface OpsContextValue {
   building: string;
 
   bookings: OpsBooking[];
   units: OpsUnit[];
+
+  /** Property admin mutations — manage units / residents / commercial contacts. */
+  createUnit: (input: NewUnitInput) => OpsUnit;
+  updateUnit: (id: string, patch: Partial<OpsUnit>) => void;
+  deleteUnit: (id: string) => void;
+  toggleUnitStatus: (id: string) => void;
 
   /** Global search query — drives Bookings table, Residences, Command Palette. */
   search: string;
@@ -55,7 +64,7 @@ const OpsContext = createContext<OpsContextValue | null>(null);
 
 export function OpsProvider({ children }: { children: ReactNode }) {
   const [bookings, setBookings] = useState<OpsBooking[]>(SEED_BOOKINGS);
-  const [units] = useState<OpsUnit[]>(SEED_UNITS);
+  const [units, setUnits] = useState<OpsUnit[]>(SEED_UNITS);
   const [search, setSearch] = useState('');
   const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null);
   const [selectedUnitId, setSelectedUnitId] = useState<string | null>(null);
@@ -69,6 +78,39 @@ export function OpsProvider({ children }: { children: ReactNode }) {
 
   const cancelBooking = useCallback((id: string, _reason?: string) => {
     setBookings((prev) => prev.map((b) => (b.id === id ? { ...b, status: 'cancelled' } : b)));
+  }, []);
+
+  const createUnit = useCallback((input: NewUnitInput): OpsUnit => {
+    const created: OpsUnit = {
+      visits: 0,
+      since: String(new Date().getFullYear()),
+      ...input,
+    };
+    setUnits((prev) => {
+      if (prev.some((u) => u.id === created.id)) {
+        return prev.map((u) => (u.id === created.id ? created : u));
+      }
+      return [created, ...prev];
+    });
+    return created;
+  }, []);
+
+  const updateUnit = useCallback((id: string, patch: Partial<OpsUnit>) => {
+    setUnits((prev) => prev.map((u) => (u.id === id ? { ...u, ...patch } : u)));
+  }, []);
+
+  const deleteUnit = useCallback((id: string) => {
+    setUnits((prev) => prev.filter((u) => u.id !== id));
+    setBookings((prev) => prev.filter((b) => b.unit !== id));
+    setSelectedUnitId((curr) => (curr === id ? null : curr));
+  }, []);
+
+  const toggleUnitStatus = useCallback((id: string) => {
+    setUnits((prev) =>
+      prev.map((u) =>
+        u.id === id ? { ...u, status: u.status === 'active' ? 'paused' : 'active' } : u,
+      ),
+    );
   }, []);
 
   const createBooking = useCallback((draft: NewBookingDraft): OpsBooking => {
@@ -136,6 +178,10 @@ export function OpsProvider({ children }: { children: ReactNode }) {
       setBookingStatus,
       cancelBooking,
       createBooking,
+      createUnit,
+      updateUnit,
+      deleteUnit,
+      toggleUnitStatus,
     }),
     [
       bookings,
@@ -149,6 +195,10 @@ export function OpsProvider({ children }: { children: ReactNode }) {
       setBookingStatus,
       cancelBooking,
       createBooking,
+      createUnit,
+      updateUnit,
+      deleteUnit,
+      toggleUnitStatus,
     ],
   );
 

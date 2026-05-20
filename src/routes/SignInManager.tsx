@@ -1,11 +1,11 @@
 import { FormEvent, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Button, Eyebrow, Field, Hairline, MaisonMark, useLucide } from '../components';
+import { Button, Eyebrow, Field, Hairline, BrandMark, useLucide } from '../components';
 import { IMAGERY } from '../data/imagery';
 
 export function SignInManager() {
   const navigate = useNavigate();
-  const [email, setEmail] = useState('manager@maison.example');
+  const [email, setEmail] = useState('manager@apenterprises.example');
   const [building, setBuilding] = useState('The Arden');
   useLucide();
 
@@ -42,7 +42,7 @@ export function SignInManager() {
             position: 'absolute',
             inset: 0,
             background:
-              'linear-gradient(180deg, rgba(15,30,61,0.4) 0%, rgba(15,30,61,0.8) 100%)',
+              'linear-gradient(180deg, rgba(10,10,10,0.4) 0%, rgba(10,10,10,0.8) 100%)',
           }}
         />
         <div
@@ -54,7 +54,7 @@ export function SignInManager() {
             color: 'var(--color-cream)',
           }}
         >
-          <Eyebrow color="rgba(248,245,239,0.7)">For Property Managers</Eyebrow>
+          <Eyebrow color="rgba(244,247,250,0.7)">For Property Managers</Eyebrow>
           <h2
             className="display-md"
             style={{
@@ -77,7 +77,7 @@ export function SignInManager() {
             style={{
               fontFamily: 'var(--font-sans)',
               fontSize: 14,
-              color: 'rgba(248,245,239,0.78)',
+              color: 'rgba(244,247,250,0.78)',
               lineHeight: 1.7,
               maxWidth: 420,
               margin: 0,
@@ -109,17 +109,7 @@ export function SignInManager() {
             }}
             aria-label="Back to landing"
           >
-            <MaisonMark size={26} />
-            <span
-              style={{
-                fontFamily: 'var(--font-serif)',
-                fontWeight: 400,
-                fontSize: 18,
-                letterSpacing: '0.01em',
-              }}
-            >
-              Maison
-            </span>
+            <BrandMark size={40} />
           </Link>
         </header>
 
@@ -143,7 +133,7 @@ export function SignInManager() {
                 padding: 'clamp(32px, 5vw, 56px)',
               }}
             >
-              <Eyebrow>Maison · Operations</Eyebrow>
+              <Eyebrow>AP Enterprises · Operations</Eyebrow>
               <h1
                 style={{
                   fontFamily: 'var(--font-serif)',
@@ -212,7 +202,7 @@ export function SignInManager() {
                   lineHeight: 1.6,
                 }}
               >
-                Operations access is granted to property managers under signed Maison stewardship.
+                Operations access is granted to property managers under signed AP Enterprises stewardship.
               </p>
             </form>
         </main>
@@ -225,7 +215,7 @@ export function SignInManager() {
             color: 'var(--color-mist-soft)',
           }}
         >
-          Operations · Maison stewardship
+          Operations · AP Enterprises stewardship
         </footer>
       </div>
 

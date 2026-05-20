@@ -1,8 +1,8 @@
 import { createContext, useCallback, useContext, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { getGreeting } from '../../utils/greeting';
-import { CATALOGUE } from './data';
-import type { BookingDraft, BookingRecord, Resident, Service } from './types';
+import { CATALOGUE, getCatalogueFor } from './data';
+import type { BookingDraft, BookingRecord, ClientTrack, Resident, Service } from './types';
 
 export interface PortalContextValue {
   resident: Resident;
@@ -25,13 +25,21 @@ export interface PortalContextValue {
 
 const PortalContext = createContext<PortalContextValue | null>(null);
 
-const DEFAULT_RESIDENT: Resident = {
+const RESIDENTIAL_RESIDENT: Resident = {
   building: 'The Arden',
   residence: '2104',
   name: 'Eleanor Ashcombe',
+  track: 'residential',
 };
 
-const SEED_HISTORY: BookingRecord[] = [
+const COMMERCIAL_CLIENT: Resident = {
+  building: 'The Arden',
+  residence: 'Ground Floor',
+  name: 'Arden Café & Bar',
+  track: 'commercial',
+};
+
+const RESIDENTIAL_HISTORY: BookingRecord[] = [
   {
     id: 'b1',
     serviceId: 'window',
@@ -64,15 +72,48 @@ const SEED_HISTORY: BookingRecord[] = [
   },
   {
     id: 'b3',
-    serviceId: 'handy',
+    serviceId: 'marble',
     kind: 'past',
     date: '2026-02-02T15:00:00',
     dateLabel: 'Feb 02, 2026',
     time: '3:00 PM',
-    serviceKicker: 'Carpentry',
-    serviceName: 'Handyman',
+    serviceKicker: 'Stone Care',
+    serviceName: 'Marble Polishing',
+    attendant: 'Atelier Restoration',
+    price: 420,
+    status: 'Closed',
+    statusKey: 'closed',
+    statusTone: 'neutral',
+  },
+];
+
+const COMMERCIAL_HISTORY: BookingRecord[] = [
+  {
+    id: 'c1',
+    serviceId: 'office-night',
+    kind: 'past',
+    date: '2026-05-10T22:00:00',
+    dateLabel: 'May 10, 2026',
+    time: '10:00 PM',
+    serviceKicker: 'Nightly',
+    serviceName: 'After-Hours Office',
     attendant: 'Hudson & Co.',
-    price: 140,
+    price: 290,
+    status: 'Closed',
+    statusKey: 'closed',
+    statusTone: 'neutral',
+  },
+  {
+    id: 'c2',
+    serviceId: 'commercial',
+    kind: 'past',
+    date: '2026-04-29T18:00:00',
+    dateLabel: 'Apr 29, 2026',
+    time: '6:00 PM',
+    serviceKicker: 'Standing',
+    serviceName: 'Commercial Cleaning',
+    attendant: 'Hudson & Co.',
+    price: 240,
     status: 'Closed',
     statusKey: 'closed',
     statusTone: 'neutral',
@@ -82,17 +123,37 @@ const SEED_HISTORY: BookingRecord[] = [
 // Attendant by service id — in real life this would come from the building's
 // vendor roster. Hard-coded here for the demo.
 const ATTENDANT_BY_SERVICE: Record<string, string> = {
+  // residential
   window: 'Hudson & Co.',
   deep: 'Marble & Linen',
-  pressure: 'Hudson & Co.',
-  handy: 'Hudson & Co.',
-  valet: 'Doorman Services',
-  garden: 'Hollis Grounds',
+  housekeeping: 'Marble & Linen',
+  marble: 'Atelier Restoration',
+  disinfecting: 'Marble & Linen',
+  moveinout: 'Hudson & Co.',
+  // commercial
+  'post-construction': 'Hudson & Co.',
+  'office-night': 'Hudson & Co.',
+  'restaurant-night': 'Marble & Linen',
+  commercial: 'Hudson & Co.',
+  epoxy: 'Atelier Restoration',
+  events: 'Hollis Grounds',
+  'real-estate': 'Marble & Linen',
 };
 
-export function PortalProvider({ children }: { children: ReactNode }) {
-  const [resident] = useState<Resident>(DEFAULT_RESIDENT);
-  const [bookings, setBookings] = useState<BookingRecord[]>(SEED_HISTORY);
+export interface PortalProviderProps {
+  children: ReactNode;
+  initialTrack?: ClientTrack;
+}
+
+export function PortalProvider({ children, initialTrack = 'residential' }: PortalProviderProps) {
+  const [resident] = useState<Resident>(
+    initialTrack === 'commercial' ? COMMERCIAL_CLIENT : RESIDENTIAL_RESIDENT,
+  );
+  const [bookings, setBookings] = useState<BookingRecord[]>(
+    initialTrack === 'commercial' ? COMMERCIAL_HISTORY : RESIDENTIAL_HISTORY,
+  );
+
+  const catalogue = useMemo(() => getCatalogueFor(resident.track), [resident.track]);
 
   const greeting = useMemo(() => getGreeting(), []);
 
@@ -175,7 +236,7 @@ export function PortalProvider({ children }: { children: ReactNode }) {
     () => ({
       resident,
       bookings,
-      catalogue: CATALOGUE,
+      catalogue,
       greeting,
       addBooking,
       cancelBooking,
@@ -183,7 +244,7 @@ export function PortalProvider({ children }: { children: ReactNode }) {
       getServiceById,
       getBookingById,
     }),
-    [resident, bookings, greeting, addBooking, cancelBooking, rescheduleBooking, getServiceById, getBookingById],
+    [resident, bookings, catalogue, greeting, addBooking, cancelBooking, rescheduleBooking, getServiceById, getBookingById],
   );
 
   return <PortalContext.Provider value={value}>{children}</PortalContext.Provider>;

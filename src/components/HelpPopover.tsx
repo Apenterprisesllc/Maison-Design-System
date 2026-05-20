@@ -69,8 +69,8 @@ export function HelpPopover({ open, onClose, anchorRef }: HelpPopoverProps) {
       <ContactRow
         icon="mail"
         label="Email"
-        value="concierge@maison.example"
-        href="mailto:concierge@maison.example"
+        value="concierge@apenterprises.example"
+        href="mailto:concierge@apenterprises.example"
       />
       <Hairline color="var(--color-taupe-soft)" width="100%" margin="12px 0" />
       <ContactRow icon="clock" label="Hours" value="24 hours · Every day" />

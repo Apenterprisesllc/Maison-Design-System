@@ -25,7 +25,7 @@ const NAV_ITEMS: { id: OpsView; label: string; icon: string }[] = [
 const chromeIconBtn: CSSProperties = {
   background: 'transparent',
   border: 0,
-  color: '#F8F5EF',
+  color: '#F4F7FA',
   width: 32,
   height: 32,
   display: 'flex',
@@ -115,7 +115,7 @@ export function OpsChrome({ active, onNav, onOpenSearch, onSignOut, children }: 
               cursor: 'pointer',
               background: isActive ? '#FFFFFF' : 'transparent',
               borderRadius: 4,
-              color: isActive ? '#0F1E3D' : '#4A4A4A',
+              color: isActive ? '#0A0A0A' : '#4A4A4A',
               fontFamily: 'Inter, sans-serif',
               fontSize: 13,
               fontWeight: isActive ? 500 : 400,
@@ -143,13 +143,13 @@ export function OpsChrome({ active, onNav, onOpenSearch, onSignOut, children }: 
           left: 0,
           right: 0,
           height: 64,
-          background: '#0F1E3D',
-          color: '#F8F5EF',
+          background: '#0A0A0A',
+          color: '#F4F7FA',
           display: 'flex',
           alignItems: 'center',
           padding: '0 24px',
           zIndex: 20,
-          borderBottom: '1px solid rgba(201,169,97,0.18)',
+          borderBottom: '1px solid rgba(196,151,62,0.18)',
           gap: 16,
         }}
       >
@@ -168,24 +168,14 @@ export function OpsChrome({ active, onNav, onOpenSearch, onSignOut, children }: 
           className="desktop-only"
           style={{ display: 'flex', alignItems: 'center', gap: 12, width: 216 }}
         >
-          <OpsMark size={24} />
-          <span
-            style={{
-              fontFamily: 'Fraunces, serif',
-              fontSize: 17,
-              fontWeight: 400,
-              letterSpacing: '0.01em',
-            }}
-          >
-            Maison
-          </span>
+          <OpsMark size={36} />
           <span
             style={{
               fontFamily: 'Inter, sans-serif',
               fontSize: 10,
               letterSpacing: '0.16em',
-              color: 'rgba(248,245,239,0.55)',
-              border: '1px solid rgba(201,169,97,0.4)',
+              color: 'rgba(244,247,250,0.55)',
+              border: '1px solid rgba(196,151,62,0.4)',
               padding: '3px 7px',
               borderRadius: 2,
               textTransform: 'uppercase',
@@ -202,17 +192,17 @@ export function OpsChrome({ active, onNav, onOpenSearch, onSignOut, children }: 
             display: 'flex',
             alignItems: 'center',
             gap: 10,
-            background: 'rgba(248,245,239,0.06)',
-            border: '1px solid rgba(201,169,97,0.25)',
+            background: 'rgba(244,247,250,0.06)',
+            border: '1px solid rgba(196,151,62,0.25)',
             padding: '7px 12px',
             borderRadius: 4,
             minWidth: 320,
             marginLeft: 24,
           }}
         >
-          <OpsIcon name="building-2" size={14} color="rgba(248,245,239,0.6)" />
+          <OpsIcon name="building-2" size={14} color="rgba(244,247,250,0.6)" />
           <span style={{ fontFamily: 'Fraunces, serif', fontSize: 14 }}>{building}</span>
-          <span style={{ marginLeft: 'auto', color: 'rgba(248,245,239,0.4)' }}>
+          <span style={{ marginLeft: 'auto', color: 'rgba(244,247,250,0.4)' }}>
             <OpsIcon name="chevrons-up-down" size={12} />
           </span>
         </div>
@@ -241,34 +231,34 @@ export function OpsChrome({ active, onNav, onOpenSearch, onSignOut, children }: 
             display: 'flex',
             alignItems: 'center',
             gap: 8,
-            background: 'rgba(248,245,239,0.06)',
+            background: 'rgba(244,247,250,0.06)',
             padding: '7px 12px',
             borderRadius: 4,
             width: 260,
-            color: 'rgba(248,245,239,0.7)',
+            color: 'rgba(244,247,250,0.7)',
             cursor: 'pointer',
             transition: 'background-color var(--dur-state) var(--ease-out), border-color var(--dur-state) var(--ease-out)',
-            border: '1px solid rgba(201,169,97,0.15)',
+            border: '1px solid rgba(196,151,62,0.15)',
             fontFamily: 'Inter, sans-serif',
           }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.background = 'rgba(248,245,239,0.12)';
-            e.currentTarget.style.borderColor = 'rgba(201,169,97,0.4)';
+            e.currentTarget.style.background = 'rgba(244,247,250,0.12)';
+            e.currentTarget.style.borderColor = 'rgba(196,151,62,0.4)';
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.background = 'rgba(248,245,239,0.06)';
-            e.currentTarget.style.borderColor = 'rgba(201,169,97,0.15)';
+            e.currentTarget.style.background = 'rgba(244,247,250,0.06)';
+            e.currentTarget.style.borderColor = 'rgba(196,151,62,0.15)';
           }}
         >
-          <OpsIcon name="search" size={14} color="rgba(248,245,239,0.6)" />
+          <OpsIcon name="search" size={14} color="rgba(244,247,250,0.6)" />
           <span style={{ fontSize: 12.5 }}>Search · ⌘K</span>
           <span style={{ flex: 1 }} />
           <span
             style={{
               fontSize: 10,
-              color: 'rgba(248,245,239,0.45)',
+              color: 'rgba(244,247,250,0.45)',
               letterSpacing: '0.08em',
-              border: '1px solid rgba(248,245,239,0.18)',
+              border: '1px solid rgba(244,247,250,0.18)',
               padding: '2px 6px',
               borderRadius: 3,
             }}
@@ -279,11 +269,11 @@ export function OpsChrome({ active, onNav, onOpenSearch, onSignOut, children }: 
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
           <button style={chromeIconBtn} aria-label="Notifications">
-            <OpsIcon name="bell" color="#F8F5EF" size={16} />
+            <OpsIcon name="bell" color="#F4F7FA" size={16} />
           </button>
           {onSignOut && (
             <button onClick={onSignOut} aria-label="Sign Out" style={chromeIconBtn}>
-              <OpsIcon name="log-out" color="#F8F5EF" size={16} />
+              <OpsIcon name="log-out" color="#F4F7FA" size={16} />
             </button>
           )}
           <div
@@ -292,8 +282,8 @@ export function OpsChrome({ active, onNav, onOpenSearch, onSignOut, children }: 
               width: 32,
               height: 32,
               borderRadius: '50%',
-              background: '#C9A961',
-              color: '#0F1E3D',
+              background: '#C4973E',
+              color: '#0A0A0A',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',

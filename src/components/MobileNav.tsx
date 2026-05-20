@@ -43,7 +43,7 @@ export function MobileNav({
         style={{
           position: 'fixed',
           inset: 0,
-          background: 'rgba(15,30,61,0.4)',
+          background: 'rgba(10,10,10,0.4)',
           opacity: open ? 1 : 0,
           pointerEvents: open ? 'auto' : 'none',
           transition: 'opacity var(--dur-layout) var(--ease-soft)',

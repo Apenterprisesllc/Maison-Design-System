@@ -9,7 +9,7 @@ export interface SpinnerProps {
 }
 
 export function Spinner({ size = 16, tone = 'default' }: SpinnerProps) {
-  const hairlineColor = tone === 'inverse' ? 'rgba(248,245,239,0.35)' : 'var(--color-taupe)';
+  const hairlineColor = tone === 'inverse' ? 'rgba(244,247,250,0.35)' : 'var(--color-taupe)';
   const dotColor = tone === 'inverse' ? 'var(--color-champagne-soft)' : 'var(--color-champagne)';
 
   return (

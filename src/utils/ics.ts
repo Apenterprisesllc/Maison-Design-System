@@ -2,7 +2,7 @@ import type { BookingRecord } from '../routes/Portal/types';
 import type { Resident } from '../routes/Portal/types';
 
 /**
- * Generate an iCalendar (RFC 5545) event for a Maison booking.
+ * Generate an iCalendar (RFC 5545) event for an AP Enterprises booking.
  * The output is a complete VCALENDAR string suitable for download or email.
  */
 
@@ -85,11 +85,11 @@ export function buildIcs(booking: BookingForIcs, resident: Resident): string {
   return [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
-    'PRODID:-//Maison//Members//EN',
+    'PRODID:-//AP Enterprises//Members//EN',
     'CALSCALE:GREGORIAN',
     'METHOD:PUBLISH',
     'BEGIN:VEVENT',
-    `UID:maison-${booking.id}@example.maison`,
+    `UID:apenterprises-${booking.id}@example.apenterprises`,
     `DTSTAMP:${stamp}`,
     `DTSTART:${toIcsUtc(start)}`,
     `DTEND:${toIcsUtc(end)}`,
@@ -119,5 +119,5 @@ export function downloadIcs(filename: string, contents: string): void {
 
 export function bookingIcsFilename(booking: BookingForIcs): string {
   const slug = booking.serviceName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-  return `maison-${slug}-${booking.id}.ics`;
+  return `apenterprises-${slug}-${booking.id}.ics`;
 }

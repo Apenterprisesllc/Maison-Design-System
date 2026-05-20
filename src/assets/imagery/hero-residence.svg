@@ -14,8 +14,8 @@
       <stop offset="1" stop-color="#E8C77A" stop-opacity="0"></stop>
     </linearGradient>
     <linearGradient id="protect" x1="0" y1="1" x2="0" y2="0">
-      <stop offset="0" stop-color="#0F1E3D" stop-opacity="0.55"></stop>
-      <stop offset="0.6" stop-color="#0F1E3D" stop-opacity="0"></stop>
+      <stop offset="0" stop-color="#0A0A0A" stop-opacity="0.55"></stop>
+      <stop offset="0.6" stop-color="#0A0A0A" stop-opacity="0"></stop>
     </linearGradient>
   </defs>
 
@@ -28,9 +28,9 @@
     <rect x="50" y="120" width="50" height="240"></rect>
     <rect x="700" y="120" width="50" height="240"></rect>
   </g>
-  <g fill="#0F1E3D" opacity="0.6">
+  <g fill="#0A0A0A" opacity="0.6">
     <rect x="100" y="60" width="600" height="60"></rect>
-    <rect x="100" y="60" width="600" height="60" fill="none" stroke="#C9A961" stroke-width="0.5"></rect>
+    <rect x="100" y="60" width="600" height="60" fill="none" stroke="#C4973E" stroke-width="0.5"></rect>
   </g>
 
   
@@ -41,7 +41,7 @@
     <rect x="340" y="140" width="120" height="200" fill="url(#glow)"></rect>
     <rect x="520" y="140" width="120" height="200" fill="#3A4866"></rect>
     <rect x="520" y="140" width="120" height="200" fill="url(#glow)"></rect>
-    <g stroke="#C9A961" stroke-width="0.5" opacity="0.7">
+    <g stroke="#C4973E" stroke-width="0.5" opacity="0.7">
       <line x1="220" y1="140" x2="220" y2="340"></line>
       <line x1="400" y1="140" x2="400" y2="340"></line>
       <line x1="580" y1="140" x2="580" y2="340"></line>
@@ -57,7 +57,7 @@
   </g>
 
   
-  <g stroke="#C9A961" stroke-width="0.3" opacity="0.45">
+  <g stroke="#C4973E" stroke-width="0.3" opacity="0.45">
     <line x1="0" y1="320" x2="800" y2="320"></line>
     <line x1="0" y1="360" x2="800" y2="360"></line>
     <line x1="0" y1="400" x2="800" y2="400"></line>
@@ -68,7 +68,7 @@
     <ellipse cx="400" cy="320" rx="18" ry="6"></ellipse>
     <rect x="386" y="240" width="28" height="80" rx="4"></rect>
     <circle cx="400" cy="230" r="14"></circle>
-    <rect x="378" y="222" width="44" height="6" rx="2" fill="#C9A961"></rect>
+    <rect x="378" y="222" width="44" height="6" rx="2" fill="#C4973E"></rect>
   </g>
 
   

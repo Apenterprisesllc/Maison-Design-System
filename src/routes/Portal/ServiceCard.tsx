@@ -9,12 +9,21 @@ export interface ServiceCardProps {
 }
 
 const SERVICE_IMG: Record<string, string> = {
+  // residential
   window: IMAGERY.serviceWindow,
   deep: IMAGERY.serviceDeep,
-  pressure: IMAGERY.servicePressure,
-  handy: IMAGERY.serviceHandy,
-  valet: IMAGERY.serviceValet,
-  garden: IMAGERY.serviceGarden,
+  housekeeping: IMAGERY.serviceHousekeeping,
+  marble: IMAGERY.serviceMarble,
+  disinfecting: IMAGERY.serviceDisinfecting,
+  moveinout: IMAGERY.serviceMoveinout,
+  // commercial
+  'post-construction': IMAGERY.servicePostConstruction,
+  'office-night': IMAGERY.serviceOfficeNight,
+  'restaurant-night': IMAGERY.serviceRestaurantNight,
+  commercial: IMAGERY.serviceCommercial,
+  epoxy: IMAGERY.serviceEpoxy,
+  events: IMAGERY.serviceEvents,
+  'real-estate': IMAGERY.serviceRealEstate,
 };
 
 export function ServiceCard({ service }: ServiceCardProps) {
@@ -92,7 +101,7 @@ export function ServiceCard({ service }: ServiceCardProps) {
             position: 'absolute',
             inset: 0,
             background:
-              'linear-gradient(180deg, rgba(15,30,61,0) 40%, rgba(15,30,61,0.5) 100%)',
+              'linear-gradient(180deg, rgba(10,10,10,0) 40%, rgba(10,10,10,0.5) 100%)',
             pointerEvents: 'none',
           }}
         />
@@ -105,9 +114,9 @@ export function ServiceCard({ service }: ServiceCardProps) {
             fontSize: 10,
             letterSpacing: '0.18em',
             textTransform: 'uppercase',
-            color: 'rgba(248,245,239,0.85)',
+            color: 'rgba(244,247,250,0.85)',
             padding: '4px 10px',
-            background: 'rgba(15,30,61,0.45)',
+            background: 'rgba(10,10,10,0.45)',
             backdropFilter: 'blur(6px)',
             WebkitBackdropFilter: 'blur(6px)',
           }}
@@ -122,7 +131,7 @@ export function ServiceCard({ service }: ServiceCardProps) {
             left: 20,
             width: 28,
             height: 28,
-            color: '#F8F5EF',
+            color: '#F4F7FA',
             opacity: 0.92,
             display: 'inline-flex',
             alignItems: 'center',

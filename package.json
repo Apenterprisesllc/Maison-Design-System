@@ -1,9 +1,9 @@
 {
-  "name": "maison",
+  "name": "ap-enterprises-members",
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Maison — quiet luxury for residential service. Landing, members portal, and operations dashboard in one app.",
+  "description": "AP Enterprises — quiet luxury for residential service. Landing, members portal, and operations dashboard in one app.",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",

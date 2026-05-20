@@ -1,9 +1,12 @@
 import type { PillTone } from '../../components';
 
+export type ClientTrack = 'residential' | 'commercial';
+
 export interface Resident {
   building: string;
   residence: string;
   name: string;
+  track: ClientTrack;
 }
 
 export type ServiceTone = 'ink' | 'stone' | 'wood';

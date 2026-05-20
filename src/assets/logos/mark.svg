@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" width="80" height="80">
   
-  <text x="40" y="56" text-anchor="middle" font-family="Fraunces, &#39;Cormorant Garamond&#39;, Georgia, serif" font-weight="300" font-size="60" fill="#0F1E3D">M</text>
-  <line x1="22" y1="66" x2="58" y2="66" stroke="#C9A961" stroke-width="1"></line>
+  <text x="40" y="56" text-anchor="middle" font-family="Fraunces, &#39;Cormorant Garamond&#39;, Georgia, serif" font-weight="300" font-size="60" fill="#0A0A0A">M</text>
+  <line x1="22" y1="66" x2="58" y2="66" stroke="#C4973E" stroke-width="1"></line>
 </svg>

@@ -166,7 +166,7 @@ function ToastCard({ toast, onDismiss }: { toast: ToastItem; onDismiss: () => vo
           fontSize: 13,
           lineHeight: 1.55,
           letterSpacing: '0.01em',
-          color: 'rgba(248,245,239,0.92)',
+          color: 'rgba(244,247,250,0.92)',
           flex: 1,
         }}
       >
@@ -183,7 +183,7 @@ function ToastCard({ toast, onDismiss }: { toast: ToastItem; onDismiss: () => vo
           background: 'transparent',
           border: 0,
           cursor: 'pointer',
-          color: 'rgba(248,245,239,0.7)',
+          color: 'rgba(244,247,250,0.7)',
           padding: 4,
           display: 'flex',
         }}

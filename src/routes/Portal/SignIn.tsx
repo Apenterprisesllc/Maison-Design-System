@@ -61,7 +61,7 @@ export function SignIn({ onSignIn }: SignInProps) {
           padding: 'clamp(32px, 5vw, 56px)',
         }}
       >
-        <Eyebrow>Maison · Memberships</Eyebrow>
+        <Eyebrow>AP Enterprises · Memberships</Eyebrow>
         <h1
           style={{
             fontFamily: 'var(--font-serif)',
@@ -151,7 +151,7 @@ export function SignIn({ onSignIn }: SignInProps) {
             lineHeight: 1.6,
           }}
         >
-          Memberships is available only to residents of buildings under Maison stewardship.
+          Memberships is available only to residents of buildings under AP Enterprises stewardship.
         </p>
       </form>
     </main>

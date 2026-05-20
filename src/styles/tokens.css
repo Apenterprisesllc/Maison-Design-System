@@ -1,22 +1,23 @@
 /* ─────────────────────────────────────────────────────────────────────────
-   Maison · Design Tokens
-   Quiet luxury for residential service. Restraint is the brand.
-   These are the single source of truth — every component reads from here.
+   AP Enterprises · Design Tokens
+   Premium cleaning services for residential & commercial spaces in South Florida.
+   Restraint is the brand. These are the single source of truth — every
+   component reads from here.
    ───────────────────────────────────────────────────────────────────────── */
 
 :root {
   /* ── Color · material palette ────────────────────────────────────────── */
-  --color-ink:        #0F1E3D;
-  --color-ink-700:    #1A2A4F;
-  --color-ink-500:    #354670;
-  --color-ink-300:    #6A7A99;
+  --color-ink:        #0A0A0A;
+  --color-ink-700:    #1A1A1A;
+  --color-ink-500:    #2C2C2C;
+  --color-ink-300:    #5A5A5A;
 
-  --color-champagne:      #C9A961;
-  --color-champagne-soft: #E4D6B0;
-  --color-champagne-deep: #A08842;
+  --color-champagne:      #C4973E;
+  --color-champagne-soft: #D4A843;
+  --color-champagne-deep: #A67C2E;
 
-  --color-cream:      #F8F5EF;
-  --color-cream-deep: #F1ECE0;
+  --color-cream:      #F4F7FA;
+  --color-cream-deep: #EAEEF3;
   --color-paper:      #FFFFFF;
 
   --color-charcoal:   #1A1A1A;
@@ -113,9 +114,9 @@
   --radius-pill: 9999px;
 
   /* ── Shadow · ink-based, no coloured shadows ─────────────────────────── */
-  --shadow-1: 0 1px 3px rgba(15, 30, 61, 0.04);
-  --shadow-2: 0 2px 8px rgba(15, 30, 61, 0.06), 0 1px 2px rgba(15, 30, 61, 0.04);
-  --shadow-3: 0 12px 32px rgba(15, 30, 61, 0.10), 0 2px 6px rgba(15, 30, 61, 0.06);
+  --shadow-1: 0 1px 3px rgba(10, 10, 10, 0.04);
+  --shadow-2: 0 2px 8px rgba(10, 10, 10, 0.06), 0 1px 2px rgba(10, 10, 10, 0.04);
+  --shadow-3: 0 12px 32px rgba(10, 10, 10, 0.10), 0 2px 6px rgba(10, 10, 10, 0.06);
 
   /* ── Motion ─────────────────────────────────────────────────────────── */
   --ease-out:       cubic-bezier(0.2, 0.6, 0.2, 1);

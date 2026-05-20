@@ -1,5 +1,5 @@
 /* ─────────────────────────────────────────────────────────────────────────
-   Maison · Layout helpers
+   AP Enterprises · Layout helpers
    ───────────────────────────────────────────────────────────────────────── */
 
 .container { max-width: var(--width-content); margin: 0 auto; padding: 0 var(--space-8); }

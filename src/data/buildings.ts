@@ -1,5 +1,5 @@
 /**
- * Fictional buildings under Maison stewardship. Used in the landing
+ * Fictional buildings under AP Enterprises stewardship. Used in the landing
  * "Properties under stewardship" marquee. Replace with real partners
  * before launch.
  */

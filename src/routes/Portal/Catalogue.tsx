@@ -6,7 +6,11 @@ export function Catalogue() {
   const { resident, catalogue, greeting } = usePortal();
   const ref = useReveal<HTMLDivElement>({ y: 32, stagger: 0.08 });
   useLucide();
-  const first = resident.name.split(' ')[0];
+  const isCommercial = resident.track === 'commercial';
+  const salutationName = isCommercial ? resident.name : resident.name.split(' ')[0];
+  const headline = isCommercial
+    ? 'The standard your property is held to.'
+    : 'The standard your residence is held to.';
 
   return (
     <main
@@ -16,7 +20,7 @@ export function Catalogue() {
         padding: 'clamp(48px, 7vw, 88px) clamp(20px, 4vw, 56px) 120px',
       }}
     >
-      <Eyebrow>{`${greeting}, ${first}`}</Eyebrow>
+      <Eyebrow>{`${greeting}, ${salutationName}`}</Eyebrow>
       <h1
         className="display-md"
         style={{
@@ -25,7 +29,7 @@ export function Catalogue() {
           maxWidth: 720,
         }}
       >
-        The standard your residence is held to.
+        {headline}
       </h1>
       <Hairline width={64} margin="28px 0 48px" />
 

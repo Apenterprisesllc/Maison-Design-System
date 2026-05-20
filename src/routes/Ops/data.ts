@@ -23,6 +23,9 @@ export interface OpsBooking {
   price: number;
 }
 
+export type UnitKind = 'residential' | 'commercial';
+export type UnitRole = 'owner' | 'tenant' | 'manager' | 'contact';
+
 export interface OpsUnit {
   id: string;
   floor: string;
@@ -33,6 +36,9 @@ export interface OpsUnit {
   status: 'active' | 'paused';
   visits: number;
   since: string;
+  kind: UnitKind;
+  role?: UnitRole;
+  notes?: string;
 }
 
 export const STATUS_LABEL: Record<BookingStatus, string> = {
@@ -68,18 +74,20 @@ export const SEED_BOOKINGS: OpsBooking[] = [
 ];
 
 export const SEED_UNITS: OpsUnit[] = [
-  { id: 'PH-02', floor: 'Penthouse', resident: 'Devereaux, S.',  residentFull: 'Sarah Devereaux',    email: 'sdevereaux@example.com', phone: '+1 (212) 555 0142', status: 'active', visits: 42, since: '2021' },
-  { id: 'PH-03', floor: 'Penthouse', resident: 'Montague, R.',   residentFull: 'Rita Montague',      status: 'active', visits: 38, since: '2022' },
-  { id: '2104',  floor: '21',        resident: 'Vance, M. & C.', residentFull: 'Marcus & Clara Vance', status: 'active', visits: 24, since: '2024' },
-  { id: '1801',  floor: '18',        resident: 'Albright, J.',   residentFull: 'Julian Albright',    status: 'active', visits: 18, since: '2024' },
-  { id: '1606',  floor: '16',        resident: 'Sato, K.',       residentFull: 'Kenji Sato',          status: 'active', visits: 31, since: '2022' },
-  { id: '1402',  floor: '14',        resident: 'Ashcombe, E.',   residentFull: 'Eleanor Ashcombe',    status: 'active', visits: 11, since: '2025' },
-  { id: '1204',  floor: '12',        resident: 'Castellanos, P.',residentFull: 'Paula Castellanos',   status: 'active', visits: 27, since: '2023' },
-  { id: '1107',  floor: '11',        resident: 'Greaves, T.',    residentFull: 'Theodore Greaves',    status: 'paused', visits: 4,  since: '2026' },
-  { id: '0903',  floor: '9',         resident: 'Whitfield, A.',  residentFull: 'Anita Whitfield',     status: 'active', visits: 19, since: '2024' },
-  { id: '0809',  floor: '8',         resident: 'Hartwell, L.',   residentFull: 'Lewis Hartwell',      status: 'active', visits: 22, since: '2023' },
-  { id: '0708',  floor: '7',         resident: 'Okafor, N.',     residentFull: 'Nia Okafor',          status: 'active', visits: 14, since: '2024' },
-  { id: '0512',  floor: '5',         resident: 'Park, H.',       residentFull: 'Hyun Park',           status: 'active', visits: 9,  since: '2025' },
+  { id: 'PH-02', floor: 'Penthouse', resident: 'Devereaux, S.',  residentFull: 'Sarah Devereaux',    email: 'sdevereaux@example.com', phone: '+1 (212) 555 0142', status: 'active', visits: 42, since: '2021', kind: 'residential', role: 'owner' },
+  { id: 'PH-03', floor: 'Penthouse', resident: 'Montague, R.',   residentFull: 'Rita Montague',      status: 'active', visits: 38, since: '2022', kind: 'residential', role: 'owner' },
+  { id: '2104',  floor: '21',        resident: 'Vance, M. & C.', residentFull: 'Marcus & Clara Vance', status: 'active', visits: 24, since: '2024', kind: 'residential', role: 'owner' },
+  { id: '1801',  floor: '18',        resident: 'Albright, J.',   residentFull: 'Julian Albright',    status: 'active', visits: 18, since: '2024', kind: 'residential', role: 'tenant' },
+  { id: '1606',  floor: '16',        resident: 'Sato, K.',       residentFull: 'Kenji Sato',          status: 'active', visits: 31, since: '2022', kind: 'residential', role: 'owner' },
+  { id: '1402',  floor: '14',        resident: 'Ashcombe, E.',   residentFull: 'Eleanor Ashcombe',    status: 'active', visits: 11, since: '2025', kind: 'residential', role: 'owner' },
+  { id: '1204',  floor: '12',        resident: 'Castellanos, P.',residentFull: 'Paula Castellanos',   status: 'active', visits: 27, since: '2023', kind: 'residential', role: 'tenant' },
+  { id: '1107',  floor: '11',        resident: 'Greaves, T.',    residentFull: 'Theodore Greaves',    status: 'paused', visits: 4,  since: '2026', kind: 'residential', role: 'owner' },
+  { id: '0903',  floor: '9',         resident: 'Whitfield, A.',  residentFull: 'Anita Whitfield',     status: 'active', visits: 19, since: '2024', kind: 'residential', role: 'owner' },
+  { id: '0809',  floor: '8',         resident: 'Hartwell, L.',   residentFull: 'Lewis Hartwell',      status: 'active', visits: 22, since: '2023', kind: 'residential', role: 'tenant' },
+  { id: '0708',  floor: '7',         resident: 'Okafor, N.',     residentFull: 'Nia Okafor',          status: 'active', visits: 14, since: '2024', kind: 'residential', role: 'owner' },
+  { id: '0512',  floor: '5',         resident: 'Park, H.',       residentFull: 'Hyun Park',           status: 'active', visits: 9,  since: '2025', kind: 'residential', role: 'tenant' },
+  { id: 'C-01',  floor: 'Lobby',     resident: 'Arden Concierge', residentFull: 'Arden Concierge Desk', email: 'frontdesk@thearden.example', phone: '+1 (305) 555 0188', status: 'active', visits: 12, since: '2023', kind: 'commercial', role: 'manager' },
+  { id: 'C-02',  floor: 'Ground',    resident: 'Arden Café',      residentFull: 'Arden Café & Bar',     email: 'cafe@thearden.example',     phone: '+1 (305) 555 0177', status: 'active', visits: 6,  since: '2024', kind: 'commercial', role: 'contact' },
 ];
 
 export const ATTENDANTS = [

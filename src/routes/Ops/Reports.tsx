@@ -136,7 +136,7 @@ export function Reports() {
       { header: 'Month', accessor: (m) => m.m },
       { header: 'Visits', accessor: (m) => m.v },
     ]);
-    downloadCsv(`maison-report-${range}-${Date.now()}.csv`, csv);
+    downloadCsv(`apenterprises-report-${range}-${Date.now()}.csv`, csv);
     toast.success('Report exported.');
   }
 
@@ -298,11 +298,11 @@ export function Reports() {
             }}
           >
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-              <span style={{ width: 12, height: 1, background: '#0F1E3D' }} />
+              <span style={{ width: 12, height: 1, background: '#0A0A0A' }} />
               Visits
             </span>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-              <span style={{ width: 12, height: 1, background: '#C9A961' }} />
+              <span style={{ width: 12, height: 1, background: '#C4973E' }} />
               Average
             </span>
           </div>
@@ -342,7 +342,7 @@ export function Reports() {
               left: 0,
               right: 0,
               bottom: (240 / MAX) * 200,
-              borderTop: '1px dashed #C9A961',
+              borderTop: '1px dashed #C4973E',
             }}
           />
 
@@ -376,8 +376,8 @@ export function Reports() {
                 style={{
                   width: '62%',
                   height: (mo.v / MAX) * 200,
-                  background: '#0F1E3D',
-                  borderTop: i === MONTHS.length - 1 ? '3px solid #C9A961' : '0',
+                  background: '#0A0A0A',
+                  borderTop: i === MONTHS.length - 1 ? '3px solid #C4973E' : '0',
                   willChange: 'transform',
                 }}
               />
@@ -450,7 +450,7 @@ export function Reports() {
                       top: 0,
                       bottom: 0,
                       width: `${s.pct * 3.5}%`,
-                      background: '#0F1E3D',
+                      background: '#0A0A0A',
                       willChange: 'transform',
                     }}
                   />

@@ -158,7 +158,7 @@ export function NewBookingModal() {
                       fontFamily: 'var(--font-sans)',
                       fontSize: 11,
                       letterSpacing: '0.06em',
-                      color: sel ? 'rgba(248,245,239,0.7)' : 'var(--color-mist)',
+                      color: sel ? 'rgba(244,247,250,0.7)' : 'var(--color-mist)',
                       marginTop: 4,
                     }}
                   >

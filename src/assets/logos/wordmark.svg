@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 80" width="200" height="80">
-  
-  <text x="100" y="48" text-anchor="middle" font-family="Fraunces, &#39;Cormorant Garamond&#39;, Georgia, serif" font-weight="300" font-size="44" letter-spacing="0.04em" fill="#0F1E3D">Maison</text>
-  <line x1="64" y1="62" x2="136" y2="62" stroke="#C9A961" stroke-width="1"></line>
-  <text x="100" y="74" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-weight="500" font-size="7" letter-spacing="0.32em" fill="#4A4A4A">RESIDENTIAL SERVICE</text>
+
+  <text x="100" y="48" text-anchor="middle" font-family="Fraunces, &#39;Cormorant Garamond&#39;, Georgia, serif" font-weight="300" font-size="28" letter-spacing="0.02em" fill="#0A0A0A">AP Enterprises</text>
+  <line x1="50" y1="58" x2="150" y2="58" stroke="#C4973E" stroke-width="1"></line>
+  <text x="100" y="70" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-weight="500" font-size="6.5" letter-spacing="0.28em" fill="#5A5A5A">PREMIUM CLEANING · SOUTH FLORIDA</text>
 </svg>

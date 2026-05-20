@@ -1,5 +1,5 @@
 /**
- * Curated Unsplash imagery for Maison. All photos are Unsplash-licensed
+ * Curated Unsplash imagery for AP Enterprises. All photos are Unsplash-licensed
  * (free for commercial use, no attribution required by license — but credit
  * the photographers in production). Replace with brand photography before
  * launch.
@@ -20,6 +20,7 @@ export const IMAGERY = {
 
   // Sign-in atmospheres
   signinResident: img('photo-1600607687939-ce8a6c25118c', 1600),
+  signinCommercial: img('photo-1497366216548-37526070297c', 1600), // modern office lobby, golden hour
   signinManager: img('photo-1582719508461-905c673771fd', 1600),
 
   // The Standard grid — 6 detail moments
@@ -33,9 +34,24 @@ export const IMAGERY = {
   // Testimonial backdrop — atmospheric / abstract
   testimonialBackdrop: img('photo-1517248135467-4c7edcad34c4', 2400),
 
-  // Portal service-card imagery (replaces gradient tile backgrounds)
+  // Portal service-card imagery — residential
   serviceWindow: img('photo-1600585154340-be6161a56a0c', 900),
   serviceDeep: img('photo-1556228720-195a672e8a03', 900),
+  serviceHousekeeping: img('photo-1581578731548-c64695cc6952', 900), // bedroom linens, hospitality
+  serviceMarble: img('photo-1615873968403-89e068629265', 900),       // polished stone surface
+  serviceDisinfecting: img('photo-1584467735815-f778f274e296', 900), // gloved hand, sterile surface
+  serviceMoveinout: img('photo-1560448204-e02f11c3d0e2', 900),       // empty bright residence
+
+  // Portal service-card imagery — commercial
+  servicePostConstruction: img('photo-1581094794329-c8112a89af12', 900), // raw build-out interior
+  serviceOfficeNight: img('photo-1497366754035-f200968a6e72', 900),       // empty office, blue hour
+  serviceRestaurantNight: img('photo-1414235077428-338989a2e8c0', 900),   // dim restaurant interior
+  serviceCommercial: img('photo-1497366811353-6870744d04b2', 900),        // glass office lobby
+  serviceEpoxy: img('photo-1581094271901-8022df4466f9', 900),             // glossy industrial floor
+  serviceEvents: img('photo-1519671482749-fd09be7ccebf', 900),            // banquet hall set
+  serviceRealEstate: img('photo-1568605114967-8130f3a36994', 900),        // staged living room
+
+  // Legacy aliases (kept for any lingering imports)
   servicePressure: img('photo-1599751449128-eb7249c3d6b1', 900),
   serviceHandy: img('photo-1567361808960-dec9cb578182', 900),
   serviceValet: img('photo-1593941707882-a5bba14938c7', 900),

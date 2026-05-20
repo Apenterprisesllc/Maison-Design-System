@@ -13,8 +13,8 @@ export type { HairlineProps } from './Hairline';
 export { Icon } from './Icon';
 export type { IconProps } from './Icon';
 
-export { MaisonMark } from './MaisonMark';
-export type { MaisonMarkProps } from './MaisonMark';
+export { BrandMark } from './BrandMark';
+export type { BrandMarkProps } from './BrandMark';
 
 export { Metric } from './Metric';
 export type { MetricProps } from './Metric';

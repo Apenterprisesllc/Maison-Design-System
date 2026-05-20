@@ -72,13 +72,13 @@ export function Button({
   const variants: Record<ButtonVariant, CSSProperties> = {
     primary: {
       ...base,
-      background: hover ? '#0A1530' : 'var(--color-ink)',
+      background: hover ? '#1A1A1A' : 'var(--color-ink)',
       color: 'var(--color-cream)',
-      borderColor: hover ? '#0A1530' : 'var(--color-ink)',
+      borderColor: hover ? '#1A1A1A' : 'var(--color-ink)',
     },
     secondary: {
       ...base,
-      background: hover ? 'rgba(201,169,97,0.10)' : 'transparent',
+      background: hover ? 'rgba(196,151,62,0.10)' : 'transparent',
       color: 'var(--color-charcoal)',
       borderColor: 'var(--color-champagne)',
     },

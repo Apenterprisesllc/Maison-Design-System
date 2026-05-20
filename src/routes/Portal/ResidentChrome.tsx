@@ -1,4 +1,4 @@
-import { Icon, MaisonMark } from '../../components';
+import { Icon, BrandMark } from '../../components';
 import { usePortal } from './context';
 
 export interface ResidentChromeProps {
@@ -17,7 +17,7 @@ export function ResidentChrome({ onAccount, onHome, onSignOut }: ResidentChromeP
         alignItems: 'center',
         padding: '20px clamp(20px, 4vw, 56px)',
         borderBottom: '1px solid var(--color-taupe)',
-        background: 'rgba(248, 245, 239, 0.88)',
+        background: 'rgba(244, 247, 250, 0.88)',
         backdropFilter: 'blur(10px)',
         WebkitBackdropFilter: 'blur(10px)',
         position: 'sticky',
@@ -27,7 +27,7 @@ export function ResidentChrome({ onAccount, onHome, onSignOut }: ResidentChromeP
     >
       <button
         onClick={onHome}
-        aria-label="Maison home"
+        aria-label="AP Enterprises home"
         style={{
           background: 'none',
           border: 0,
@@ -38,18 +38,7 @@ export function ResidentChrome({ onAccount, onHome, onSignOut }: ResidentChromeP
           gap: 10,
         }}
       >
-        <MaisonMark size={26} />
-        <span
-          style={{
-            fontFamily: 'var(--font-serif)',
-            fontWeight: 400,
-            fontSize: 18,
-            color: 'var(--color-charcoal)',
-            letterSpacing: '0.01em',
-          }}
-        >
-          Maison
-        </span>
+        <BrandMark size={40} />
       </button>
       <div style={{ flex: 1 }} />
       <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
@@ -73,7 +62,9 @@ export function ResidentChrome({ onAccount, onHome, onSignOut }: ResidentChromeP
               marginTop: 2,
             }}
           >
-            Residence {resident.residence}
+            {resident.track === 'commercial'
+              ? `Property · ${resident.residence}`
+              : `Residence ${resident.residence}`}
           </div>
         </div>
         <button

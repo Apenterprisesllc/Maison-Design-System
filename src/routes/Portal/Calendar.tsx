@@ -168,9 +168,9 @@ export function Calendar({ selectedDate, onSelect }: CalendarProps) {
                   color: past ? 'var(--color-mist-faint)' : 'var(--color-charcoal)',
                   textAlign: 'left',
                   background: sel
-                    ? 'rgba(201,169,97,0.12)'
+                    ? 'rgba(196,151,62,0.12)'
                     : isToday
-                      ? 'rgba(248,245,239,0.6)'
+                      ? 'rgba(244,247,250,0.6)'
                       : 'transparent',
                   boxShadow: sel
                     ? 'inset 0 0 0 1px var(--color-champagne)'
