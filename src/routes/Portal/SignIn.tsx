@@ -33,7 +33,12 @@ export function SignIn({ onSignIn }: SignInProps) {
     setSubmitting(true);
     // Mock backend latency for premium feel
     window.setTimeout(() => {
-      onSignIn({ building: building.trim(), residence: residence.trim(), name: name.trim() });
+      onSignIn({
+        building: building.trim(),
+        residence: residence.trim(),
+        name: name.trim(),
+        track: 'residential',
+      });
     }, 800);
   }
 
