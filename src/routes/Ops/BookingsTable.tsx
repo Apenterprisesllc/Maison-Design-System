@@ -34,7 +34,7 @@ const TABS: { key: FilterKey; label: string }[] = [
 export function BookingsTable() {
   useLucide();
   const toast = useToast();
-  const { bookings, search, setSearch, openBooking, openNewBooking, openPalette } = useOps();
+  const { bookings, search, setSearch, openBooking, openNewBooking, openPalette, propertyName } = useOps();
   const [filter, setFilter] = useState<FilterKey>('all');
 
   const filtered = useMemo(() => {
@@ -42,7 +42,7 @@ export function BookingsTable() {
     return bookings.filter((b) => {
       if (filter !== 'all' && b.status !== filter) return false;
       if (!q) return true;
-      return [b.id, b.unit, b.resident, b.service, b.attendant]
+      return [b.reference, b.unit, b.resident, b.service, b.attendant]
         .join(' ')
         .toLowerCase()
         .includes(q);
@@ -51,7 +51,7 @@ export function BookingsTable() {
 
   function exportCsv() {
     const csv = buildCsv<OpsBooking>(filtered, [
-      { header: 'Ref', accessor: (b) => b.id },
+      { header: 'Ref', accessor: (b) => b.reference },
       { header: 'Date', accessor: (b) => b.date },
       { header: 'Time', accessor: (b) => b.time },
       { header: 'Residence', accessor: (b) => b.unit },
@@ -70,7 +70,7 @@ export function BookingsTable() {
     <div style={{ padding: 'clamp(20px, 4vw, 32px) clamp(20px, 4vw, 32px) 56px' }}>
       <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
         <div>
-          <OpsEyebrow>The Arden · Operations</OpsEyebrow>
+          <OpsEyebrow>{propertyName} · Operations</OpsEyebrow>
           <h1
             style={{
               fontFamily: 'Fraunces, serif',
@@ -241,7 +241,7 @@ export function BookingsTable() {
                       i % 2 === 1 ? 'rgba(241,236,224,0.35)' : 'transparent';
                   }}
                 >
-                  <td style={td}>{b.id}</td>
+                  <td style={td}>{b.reference}</td>
                   <td style={td}>{b.date}</td>
                   <td style={{ ...td, fontFamily: 'Fraunces, serif', fontSize: 14 }}>{b.time}</td>
                   <td style={td}>{b.unit}</td>

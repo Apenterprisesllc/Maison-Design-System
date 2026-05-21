@@ -20,6 +20,8 @@ export interface Service {
   price: number;
   cadence: string;
   description: string;
+  /** Optional Storage path inside `service-photos`. */
+  photoPath?: string | null;
 }
 
 export interface TimeSlot {
@@ -39,6 +41,7 @@ export type BookingStatus = 'confirmed' | 'closed' | 'cancelled';
 
 export interface BookingRecord {
   id: string;
+  reference: string;
   serviceId: string;
   kind: 'upcoming' | 'past';
   date: string; // ISO date for sorting / ICS

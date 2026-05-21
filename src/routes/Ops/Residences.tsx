@@ -34,6 +34,7 @@ export function Residences() {
     openPalette,
     deleteUnit,
     toggleUnitStatus,
+    propertyName,
   } = useOps();
   const toast = useToast();
 
@@ -80,12 +81,18 @@ export function Residences() {
     setConfirmDelete(u);
   };
 
-  const confirmDeletion = () => {
+  const confirmDeletion = async () => {
     if (!confirmDelete) return;
     const name = confirmDelete.residentFull;
-    deleteUnit(confirmDelete.id);
-    toast.success(`Removed ${name}`);
+    const target = confirmDelete;
     setConfirmDelete(null);
+    try {
+      await deleteUnit(target.id);
+      toast.success(`Removed ${name}`);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Could not remove. Try again.';
+      toast.error(message);
+    }
   };
 
   return (
@@ -100,7 +107,7 @@ export function Residences() {
         }}
       >
         <div>
-          <OpsEyebrow>The Arden · {units.length} Entries</OpsEyebrow>
+          <OpsEyebrow>{propertyName} · {units.length} Entries</OpsEyebrow>
           <h1
             style={{
               fontFamily: 'Fraunces, serif',
@@ -316,13 +323,19 @@ export function Residences() {
                     <RowAction
                       icon={u.status === 'active' ? 'pause-circle' : 'play-circle'}
                       label={u.status === 'active' ? 'Pause' : 'Activate'}
-                      onClick={() => {
-                        toggleUnitStatus(u.id);
-                        toast.success(
-                          u.status === 'active'
-                            ? `Paused ${u.residentFull}`
-                            : `Activated ${u.residentFull}`,
-                        );
+                      onClick={async () => {
+                        try {
+                          await toggleUnitStatus(u.id);
+                          toast.success(
+                            u.status === 'active'
+                              ? `Paused ${u.residentFull}`
+                              : `Activated ${u.residentFull}`,
+                          );
+                        } catch (err) {
+                          const message =
+                            err instanceof Error ? err.message : 'Could not update. Try again.';
+                          toast.error(message);
+                        }
                       }}
                     />
                     <RowAction icon="pencil" label="Edit" onClick={() => handleEdit(u)} />

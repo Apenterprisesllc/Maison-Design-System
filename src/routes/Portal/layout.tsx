@@ -1,24 +1,16 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import gsap from 'gsap';
 import { ToastProvider } from '../../components';
+import { useAuth } from '../../lib/auth';
 import { PortalProvider } from './context';
 import { ResidentChrome } from './ResidentChrome';
-import type { ClientTrack } from './types';
-
-function resolveTrack(stateTrack: unknown): ClientTrack {
-  if (stateTrack === 'commercial' || stateTrack === 'residential') return stateTrack;
-  if (typeof window !== 'undefined') {
-    const stored = window.sessionStorage.getItem('apTrack');
-    if (stored === 'commercial' || stored === 'residential') return stored;
-  }
-  return 'residential';
-}
 
 function PortalShell() {
   const navigate = useNavigate();
   const location = useLocation();
   const screenRef = useRef<HTMLDivElement>(null);
+  const { signOut } = useAuth();
 
   // Sub-screen transition: fade + slight slide when location.pathname changes
   useEffect(() => {
@@ -32,12 +24,17 @@ function PortalShell() {
     );
   }, [location.pathname]);
 
+  async function handleSignOut() {
+    await signOut();
+    navigate('/', { replace: true });
+  }
+
   return (
     <div>
       <ResidentChrome
         onHome={() => navigate('/portal')}
         onAccount={() => navigate('/portal/account')}
-        onSignOut={() => navigate('/')}
+        onSignOut={handleSignOut}
       />
       <div ref={screenRef} key={location.pathname} style={{ willChange: 'transform, opacity' }}>
         <Outlet />
@@ -48,26 +45,12 @@ function PortalShell() {
 
 /**
  * PortalLayout — wraps every /portal/* route with shared state and chrome.
- * State (resident, bookings) lives inside PortalProvider so it persists
- * across nested route navigations and resets on full unmount (sign-out).
+ * Track comes from the authenticated user's primary unit (or profile fallback)
+ * resolved inside PortalProvider, so no URL state is needed.
  */
 export function PortalLayout() {
-  const location = useLocation();
-  const initialTrack = useMemo<ClientTrack>(
-    () => resolveTrack((location.state as { track?: unknown } | null)?.track),
-    // Only re-resolve on first mount; subsequent intra-portal navigations
-    // shouldn't reset the track.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [],
-  );
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    window.sessionStorage.setItem('apTrack', initialTrack);
-  }, [initialTrack]);
-
   return (
-    <PortalProvider initialTrack={initialTrack}>
+    <PortalProvider>
       <ToastProvider>
         <PortalShell />
       </ToastProvider>

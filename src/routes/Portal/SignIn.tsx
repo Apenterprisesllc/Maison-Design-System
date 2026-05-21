@@ -1,45 +1,111 @@
 import { FormEvent, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button, Eyebrow, Field, Hairline, HelpPopover } from '../../components';
 import type { FieldStatus } from '../../components';
-import type { Resident } from './types';
+import { useAuth } from '../../lib/auth';
+import { supabase } from '../../lib/supabase';
+import type { ClientTrack } from './types';
 
 export interface SignInProps {
-  onSignIn: (resident: Resident) => void;
+  /** Called after a successful sign-in. Navigation should happen here. */
+  onSignIn: () => void;
+  /**
+   * If set, the form asserts that the signed-in profile's `primary_track`
+   * matches. Pass `null` to accept any track (used when arriving without an
+   * explicit `?track=` URL param).
+   */
+  expectedTrack?: ClientTrack | null;
 }
 
-type FieldKey = 'building' | 'residence' | 'name';
+type FieldKey = 'email' | 'password';
 
-export function SignIn({ onSignIn }: SignInProps) {
-  const [building, setBuilding] = useState('The Arden');
-  const [residence, setResidence] = useState('2104');
-  const [name, setName] = useState('Eleanor Ashcombe');
+export function SignIn({ onSignIn, expectedTrack = null }: SignInProps) {
+  const navigate = useNavigate();
+  const { signIn, signOut, status: authStatus } = useAuth();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [errors, setErrors] = useState<Partial<Record<FieldKey, string>>>({});
+  const [serverError, setServerError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const helpAnchor = useRef<HTMLDivElement | null>(null);
 
+  async function switchToManager() {
+    if (authStatus === 'authenticated') await signOut();
+    navigate('/sign-in/manager');
+  }
+
   function validate(): boolean {
     const next: Partial<Record<FieldKey, string>> = {};
-    if (!building.trim()) next.building = 'Required.';
-    if (!residence.trim()) next.residence = 'Required.';
-    if (!name.trim()) next.name = 'Required.';
+    if (!email.trim()) next.email = 'Required.';
+    else if (!/^\S+@\S+\.\S+$/.test(email.trim())) next.email = 'Use a valid email.';
+    if (!password) next.password = 'Required.';
     setErrors(next);
     return Object.keys(next).length === 0;
   }
 
-  function handle(e: FormEvent) {
+  const [wrongRoleHint, setWrongRoleHint] = useState<'manager' | null>(null);
+  const [wrongTrackHint, setWrongTrackHint] = useState<ClientTrack | null>(null);
+
+  async function handle(e: FormEvent) {
     e.preventDefault();
+    setServerError(null);
+    setWrongRoleHint(null);
+    setWrongTrackHint(null);
     if (!validate()) return;
     setSubmitting(true);
-    // Mock backend latency for premium feel
-    window.setTimeout(() => {
-      onSignIn({
-        building: building.trim(),
-        residence: residence.trim(),
-        name: name.trim(),
-        track: 'residential',
-      });
-    }, 800);
+    const { error } = await signIn(email.trim(), password);
+    if (error) {
+      setSubmitting(false);
+      setServerError(translate(error));
+      return;
+    }
+
+    // Validate the role server-side: only residents (or attendants) belong here.
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      setSubmitting(false);
+      setServerError('Sign-in failed. Try again.');
+      return;
+    }
+    const { data: prof, error: profErr } = await supabase
+      .from('profiles')
+      .select('role, primary_track')
+      .eq('id', user.id)
+      .single();
+    setSubmitting(false);
+    if (profErr || !prof) {
+      await signOut();
+      setServerError('Your profile is not available. Contact AP Enterprises support.');
+      return;
+    }
+    if (prof.role === 'property_manager' || prof.role === 'super_admin') {
+      await signOut();
+      setServerError('This sign-in is reserved for residents.');
+      setWrongRoleHint('manager');
+      return;
+    }
+    if (prof.role !== 'resident' && prof.role !== 'attendant') {
+      await signOut();
+      setServerError('This account does not have resident access.');
+      return;
+    }
+    // Track validation only runs when the caller passed an expectation
+    // (i.e. the URL had ?track=). Profiles without a track yet (no unit
+    // attached) are allowed through.
+    if (expectedTrack && prof.primary_track && prof.primary_track !== expectedTrack) {
+      await signOut();
+      const human = prof.primary_track === 'commercial' ? 'commercial' : 'residential';
+      setServerError(`This account is registered for the ${human} portal.`);
+      setWrongTrackHint(prof.primary_track);
+      return;
+    }
+    onSignIn();
+  }
+
+  async function switchTrack(target: ClientTrack) {
+    if (authStatus === 'authenticated') await signOut();
+    navigate(`/sign-in/resident?track=${target}`);
   }
 
   const status = (key: FieldKey): FieldStatus => (errors[key] ? 'error' : 'default');
@@ -84,42 +150,73 @@ export function SignIn({ onSignIn }: SignInProps) {
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 22 }}>
           <Field
-            label="Building"
-            value={building}
+            label="Email"
+            type="email"
+            value={email}
             onChange={(e) => {
-              setBuilding(e.target.value);
-              if (errors.building) setErrors((p) => ({ ...p, building: undefined }));
+              setEmail(e.target.value);
+              if (errors.email) setErrors((p) => ({ ...p, email: undefined }));
+              if (serverError) setServerError(null);
             }}
-            status={status('building')}
-            hint={errors.building}
-            autoComplete="organization"
+            status={status('email')}
+            hint={errors.email}
+            autoComplete="email"
             required
           />
           <Field
-            label="Residence"
-            value={residence}
+            label="Password"
+            type="password"
+            value={password}
             onChange={(e) => {
-              setResidence(e.target.value);
-              if (errors.residence) setErrors((p) => ({ ...p, residence: undefined }));
+              setPassword(e.target.value);
+              if (errors.password) setErrors((p) => ({ ...p, password: undefined }));
+              if (serverError) setServerError(null);
             }}
-            status={status('residence')}
-            hint={errors.residence}
-            autoComplete="address-line2"
-            required
-          />
-          <Field
-            label="Resident Name"
-            value={name}
-            onChange={(e) => {
-              setName(e.target.value);
-              if (errors.name) setErrors((p) => ({ ...p, name: undefined }));
-            }}
-            status={status('name')}
-            hint={errors.name}
-            autoComplete="name"
+            status={status('password')}
+            hint={errors.password}
+            autoComplete="current-password"
             required
           />
         </div>
+
+        {serverError && (
+          <div
+            role="alert"
+            style={{
+              marginTop: 18,
+              fontFamily: 'var(--font-sans)',
+              fontSize: 13,
+              color: 'var(--color-status-danger)',
+              padding: '10px 12px',
+              background: 'rgba(122,46,46,0.06)',
+              border: '1px solid rgba(122,46,46,0.25)',
+              borderRadius: 4,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 8,
+            }}
+          >
+            <span>{serverError}</span>
+            {wrongRoleHint === 'manager' && (
+              <button
+                type="button"
+                onClick={switchToManager}
+                style={errorActionStyle}
+              >
+                Go to manager sign-in →
+              </button>
+            )}
+            {wrongTrackHint && (
+              <button
+                type="button"
+                onClick={() => switchTrack(wrongTrackHint)}
+                style={errorActionStyle}
+              >
+                Go to {wrongTrackHint} sign-in →
+              </button>
+            )}
+          </div>
+        )}
 
         <div
           style={{
@@ -132,7 +229,7 @@ export function SignIn({ onSignIn }: SignInProps) {
           }}
         >
           <div ref={helpAnchor} style={{ position: 'relative' }}>
-            <Button variant="quiet" onClick={() => setHelpOpen((v) => !v)}>
+            <Button variant="quiet" onClick={() => setHelpOpen((v) => !v)} type="button">
               Need Help
             </Button>
             <HelpPopover open={helpOpen} onClose={() => setHelpOpen(false)} anchorRef={helpAnchor} />
@@ -145,6 +242,32 @@ export function SignIn({ onSignIn }: SignInProps) {
           >
             {submitting ? 'Signing In' : 'Sign In'}
           </Button>
+        </div>
+
+        <div
+          style={{
+            marginTop: 24,
+            paddingTop: 18,
+            borderTop: '1px solid var(--color-taupe-soft)',
+            display: 'flex',
+            justifyContent: 'center',
+          }}
+        >
+          <button
+            type="button"
+            onClick={switchToManager}
+            style={{
+              background: 'transparent',
+              border: 0,
+              padding: 0,
+              cursor: 'pointer',
+              fontFamily: 'var(--font-sans)',
+              fontSize: 13,
+              color: 'var(--color-mist)',
+            }}
+          >
+            Manager Instead
+          </button>
         </div>
 
         <p
@@ -161,4 +284,26 @@ export function SignIn({ onSignIn }: SignInProps) {
       </form>
     </main>
   );
+}
+
+const errorActionStyle: React.CSSProperties = {
+  alignSelf: 'flex-start',
+  background: 'transparent',
+  border: '1px solid var(--color-status-danger)',
+  borderRadius: 4,
+  padding: '5px 10px',
+  cursor: 'pointer',
+  fontFamily: 'var(--font-sans)',
+  fontSize: 12,
+  color: 'var(--color-status-danger)',
+  textTransform: 'uppercase',
+  letterSpacing: '0.08em',
+};
+
+function translate(message: string): string {
+  const m = message.toLowerCase();
+  if (m.includes('invalid login')) return 'Email and password do not match.';
+  if (m.includes('email not confirmed')) return 'This account has not been confirmed.';
+  if (m.includes('rate limit')) return 'Too many attempts. Wait a moment and try again.';
+  return message;
 }

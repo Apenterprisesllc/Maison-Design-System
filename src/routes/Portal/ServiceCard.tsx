@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Hairline } from '../../components';
 import { IMAGERY } from '../../data/imagery';
+import { publicUrlFor } from '../../lib/api/attachments';
 import type { Service } from './types';
 
 export interface ServiceCardProps {
@@ -29,7 +30,8 @@ const SERVICE_IMG: Record<string, string> = {
 export function ServiceCard({ service }: ServiceCardProps) {
   const [hover, setHover] = useState(false);
   const [loaded, setLoaded] = useState(false);
-  const img = SERVICE_IMG[service.id];
+  // Prefer a property-uploaded photo from Storage; fall back to the brand stock library.
+  const img = service.photoPath ? publicUrlFor('service-photos', service.photoPath) : SERVICE_IMG[service.id];
 
   return (
     <Link

@@ -95,9 +95,11 @@ export function OpsPill({ tone = 'neutral', dot = true, children }: OpsPillProps
 export interface OpsButtonProps {
   variant?: OpsButtonVariant;
   children: ReactNode;
-  onClick?: () => void;
+  onClick?: (event?: React.MouseEvent) => void;
   icon?: string;
   style?: CSSProperties;
+  disabled?: boolean;
+  type?: 'button' | 'submit' | 'reset';
 }
 
 export function OpsButton({
@@ -106,6 +108,8 @@ export function OpsButton({
   onClick,
   icon,
   style = {},
+  disabled = false,
+  type = 'button',
 }: OpsButtonProps) {
   const [hover, setHover] = useState(false);
   const base: CSSProperties = {
@@ -146,10 +150,19 @@ export function OpsButton({
   };
   return (
     <button
-      style={variants[variant]}
-      onMouseEnter={() => setHover(true)}
+      type={type}
+      disabled={disabled}
+      style={{
+        ...variants[variant],
+        cursor: disabled ? 'not-allowed' : 'pointer',
+        opacity: disabled ? 0.55 : 1,
+      }}
+      onMouseEnter={() => !disabled && setHover(true)}
       onMouseLeave={() => setHover(false)}
-      onClick={onClick}
+      onClick={(e) => {
+        if (disabled) return;
+        onClick?.(e);
+      }}
     >
       {icon && <OpsIcon name={icon} size={14} />}
       {children}

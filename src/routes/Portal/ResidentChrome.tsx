@@ -1,4 +1,4 @@
-import { Icon, BrandMark } from '../../components';
+import { Icon, BrandMark, NotificationBell } from '../../components';
 import { usePortal } from './context';
 
 export interface ResidentChromeProps {
@@ -67,6 +67,7 @@ export function ResidentChrome({ onAccount, onHome, onSignOut }: ResidentChromeP
               : `Residence ${resident.residence}`}
           </div>
         </div>
+        <NotificationBell tone="light" />
         <button
           onClick={onAccount}
           aria-label="Account and schedule"

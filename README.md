@@ -27,7 +27,171 @@ npm run preview       # serve the production build locally
 npm run typecheck     # type-check without emitting
 npm run lint          # ESLint
 npm run format        # Prettier
+
+# Tests
+npm run test                       # vitest run (unit + component, ~50 tests)
+npm run test:watch                 # vitest in watch mode
+npm run test:ui                    # vitest UI in the browser
+npm run test:coverage              # vitest with v8 coverage report
+npm run test:e2e                   # playwright E2E (requires `npx playwright install` once)
+npm run test:e2e:ui                # playwright in interactive UI mode
+
+# Supabase
+npm run supabase:link              # link the project to a Supabase ref
+npm run supabase:push              # apply migrations in supabase/migrations
+npm run gen:types                  # regenerate src/lib/types/db.ts from the live schema
+npm run supabase:functions:deploy  # deploy edge functions
 ```
+
+---
+
+## Tests
+
+The project ships with a three-layer test pyramid. All backend traffic is intercepted
+by [MSW](https://mswjs.io) handlers in `src/test/handlers.ts` so tests run offline,
+deterministically, and without burning real Supabase quotas.
+
+```
+src/test/
+  setup.ts       jest-dom + MSW Node server start/stop
+  server.ts      MSW server for vitest (Node)
+  browser.ts     MSW worker for Playwright (browser)
+  handlers.ts    Mock Supabase REST + Auth + Edge Function handlers
+  store.ts       In-memory fake DB reset between tests
+  fixtures.ts    Sample property / profiles / units / services / bookings
+  test-utils.tsx Render + sign-in helpers for component tests
+```
+
+### Vitest (unit + component) — `npm run test`
+
+About 50 tests covering:
+- **Utilities**: CSV (RFC 4180), iCalendar (RFC 5545), greeting time-of-day,
+  share API fallback to clipboard.
+- **Mappers**: DB row ↔ frontend Service / Booking / Unit, surname derivation.
+- **Helpers**: `generateTempPassword` (length, charset, uniqueness).
+- **Components**: `PageTransition` (pointer-events during fade), `Field`
+  (label associations), `ProtectedRoute` (role gating + redirects),
+  `AddPropertyModal` (slug auto-derivation, validation), `SignIn` &
+  `SignInManager` (role + track validation, error shortcuts).
+
+### Playwright (E2E) — `npm run test:e2e`
+
+Three browser-level happy-path specs that exercise the full stack against
+MSW running in the browser (the dev server starts with `VITE_E2E_MOCK=true`):
+
+- `e2e/auth.spec.ts` — sign-in flows for manager / admin / residents and
+  the cross-track / cross-role rejection paths.
+- `e2e/resident-books.spec.ts` — residential resident schedules a Deep
+  Cleaning and lands on the confirmation page.
+- `e2e/admin-creates-property.spec.ts` — super admin onboards a new
+  building and assigns a manager.
+
+First-time setup:
+
+```bash
+npx playwright install chromium
+npm run test:e2e
+```
+
+
+---
+
+## What's wired vs decorative
+
+After the wire-up pass, every visible action is backed by a real query / mutation:
+
+- **Booking time slots** — fetched per `(unit, date)` from `listBookingsForUnitDate`; slots already taken are disabled. A unique partial index on `bookings(unit_id, scheduled_at) WHERE status <> 'cancelled'` prevents race conditions at the DB level.
+- **Calendar busy dots** — dates with the resident's existing bookings show a subtle marker.
+- **Reports KPIs and charts** — aggregated from real bookings, filtered by the selected range (Q1/Q2/YTD/Last 12). Service Mix and Top Attendants groupBy the booking rows.
+- **Pipeline dynamic** — header date is `new Date()`. "On-Time Arrivals" KPI computed from `arrived_at` ≤ `scheduled_at + 15 min`. Filter popover (status + attendant) + Export CSV both work on the loaded bookings.
+- **OpsChrome** — sidebar "Today" counts real bookings, attendants on premises, awaiting access. Profile avatar = initials from `profile.full_name`. Bell = `NotificationBell` with realtime unread badge.
+- **Mark Arrived** — `BookingDetailDrawer` exposes the button when status is `enroute` or `active`; sets `bookings.arrived_at` and promotes to `active`.
+- **Status timeline** — pulled from `booking_status_events` (auto-populated by trigger). Each step shows the real timestamp.
+- **Attendant Messages** — per-booking thread persisted in `attendant_messages`. Realtime updates as new entries land.
+- **Notifications** — `notifications` table + auto-trigger on booking create/update/cancel. Bell appears in OpsChrome, AdminChrome, ResidentChrome.
+- **Admin CRUD** — Edit Property modal (`updateProperty`), Delete with cascade-safety modal (`describePropertyDependencies` → `deleteProperty`), `/admin/managers` page with edit / reset password / delete (via `manage-staff-user` Edge Function), realtime KPI refresh across all relevant tables (debounced 500 ms).
+
+The Pipeline now relies on `arrived_at`. To populate On-Time KPIs, managers should hit the "Mark Arrived" button from the booking drawer when the attendant shows up.
+
+---
+
+## Backend (Supabase)
+
+The app is powered by Supabase: Postgres + Auth + Realtime + Edge Functions + Storage. All schema lives under `supabase/`.
+
+### Required environment variables
+
+Copy `.env.example` to `.env.local` and fill in:
+
+```
+VITE_SUPABASE_URL=https://<ref>.supabase.co
+VITE_SUPABASE_ANON_KEY=<anon key>
+```
+
+Never commit `SUPABASE_SERVICE_ROLE_KEY` — it belongs in **Edge Function secrets only** (Supabase Dashboard → Edge Functions → Secrets):
+
+```
+SUPABASE_URL
+SUPABASE_ANON_KEY
+SUPABASE_SERVICE_ROLE_KEY
+```
+
+### First-time setup
+
+```bash
+# Install the Supabase CLI globally (one-time)
+npm i -g supabase
+
+# Link this repo to your remote project
+supabase login
+supabase link --project-ref <ref>
+
+# Apply the schema, RLS, storage policies, and seed data
+supabase db push
+supabase db reset --linked     # or: psql -f supabase/seed.sql
+
+# Regenerate TypeScript types (commit the resulting src/lib/types/db.ts)
+npm run gen:types
+
+# Deploy edge functions
+supabase functions deploy create-resident-user
+supabase functions deploy cancel-booking
+
+# Set the secrets the edge functions need (Dashboard or CLI)
+supabase secrets set SUPABASE_URL=https://<ref>.supabase.co
+supabase secrets set SUPABASE_ANON_KEY=<anon key>
+supabase secrets set SUPABASE_SERVICE_ROLE_KEY=<service role key>
+```
+
+### Bootstrap roles
+
+The first super admin and the first property manager are created manually:
+
+1. Supabase Dashboard → Authentication → Add user (e.g. `admin@apenterprises.example`).
+2. SQL editor:
+   ```sql
+   update profiles set role = 'super_admin' where email = 'admin@apenterprises.example';
+   ```
+3. Add a property manager the same way, then:
+   ```sql
+   update profiles
+      set role = 'property_manager',
+          primary_property_id = (select id from properties where slug = 'the-arden')
+    where email = 'manager@thearden.example';
+   ```
+
+Residents are created in-app from Ops → Residences → "Add Entry" with the "Create portal access" toggle.
+
+### Smoke test
+
+1. Manager signs in at `/sign-in/manager` → `/ops`.
+2. From `/ops/residences` → Add Entry, toggle "Create portal access", note the temp password.
+3. Resident signs in at `/sign-in/resident` → `/auth/reset` (forced) → sets password → `/portal`.
+4. Resident books from the catalogue.
+5. Manager sees the new card on `/ops` Pipeline via Realtime (open both browsers side by side).
+6. Manager drags Scheduled → En Route. The card moves optimistically, the server confirms.
+7. Resident cancels a future booking from `/portal/account` (uses the `cancel-booking` Edge Function).
+8. Manager uploads a before-photo on the booking drawer → stored in `booking-attachments`.
 
 ---
 

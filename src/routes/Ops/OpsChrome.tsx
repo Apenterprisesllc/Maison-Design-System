@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import gsap from 'gsap';
-import { MobileNav, useLucide } from '../../components';
+import { MobileNav, NotificationBell, useLucide } from '../../components';
+import { useAuth } from '../../lib/auth';
 import { useOps } from './context';
 import type { OpsView } from './navigation';
 import { OpsEyebrow, OpsHairline, OpsIcon, OpsMark } from './OpsPrimitives';
@@ -36,8 +38,28 @@ const chromeIconBtn: CSSProperties = {
 };
 
 export function OpsChrome({ active, onNav, onOpenSearch, onSignOut, children }: OpsChromeProps) {
-  const { building } = useOps();
+  const { building, viewingAsSuperAdmin, propertyName, bookings } = useOps();
+  const { profile } = useAuth();
+  const navigate = useNavigate();
   useLucide();
+  // Super admin returns to /admin; managers stay on /ops.
+  const logoHome = profile?.role === 'super_admin' ? '/admin' : '/ops';
+  // Today snapshot — real counts from the loaded bookings.
+  const todayDateLabel = new Date()
+    .toLocaleDateString('en-US', { day: '2-digit', month: 'short' })
+    .replace(',', '');
+  const todaysBookings = bookings.filter((b) => b.date === todayDateLabel && b.status !== 'cancelled');
+  const onSiteAttendants = new Set(
+    bookings.filter((b) => b.status === 'active').map((b) => b.attendant),
+  ).size;
+  const awaitingAccess = bookings.filter((b) => b.note?.toLowerCase().includes('awaiting')).length;
+  // Initials for avatar — first letter of each name component, max 2.
+  const initials = (profile?.full_name ?? profile?.email ?? 'M')
+    .split(/[\s@.]+/)
+    .filter(Boolean)
+    .map((s) => s[0]!.toUpperCase())
+    .slice(0, 2)
+    .join('');
   const [drawerOpen, setDrawerOpen] = useState(false);
   const indicatorRef = useRef<HTMLDivElement>(null);
   const navRef = useRef<HTMLElement>(null);
@@ -164,9 +186,18 @@ export function OpsChrome({ active, onNav, onOpenSearch, onSignOut, children }: 
           </button>
         )}
 
-        <div
+        <Link
+          to={logoHome}
+          aria-label={profile?.role === 'super_admin' ? 'Back to Admin' : 'Operations home'}
           className="desktop-only"
-          style={{ display: 'flex', alignItems: 'center', gap: 12, width: 216 }}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
+            width: 216,
+            textDecoration: 'none',
+            color: 'inherit',
+          }}
         >
           <OpsMark size={36} />
           <span
@@ -184,7 +215,7 @@ export function OpsChrome({ active, onNav, onOpenSearch, onSignOut, children }: 
           >
             Operations
           </span>
-        </div>
+        </Link>
 
         <div
           className="desktop-only"
@@ -207,7 +238,9 @@ export function OpsChrome({ active, onNav, onOpenSearch, onSignOut, children }: 
           </span>
         </div>
 
-        <span
+        <Link
+          to={logoHome}
+          aria-label={profile?.role === 'super_admin' ? 'Back to Admin' : 'Operations home'}
           className="mobile-only"
           style={{
             fontFamily: 'Fraunces, serif',
@@ -215,10 +248,11 @@ export function OpsChrome({ active, onNav, onOpenSearch, onSignOut, children }: 
             color: 'var(--color-cream)',
             flex: 1,
             textAlign: 'center',
+            textDecoration: 'none',
           }}
         >
           Operations
-        </span>
+        </Link>
 
         <div style={{ flex: 1 }} className="desktop-only" />
 
@@ -268,16 +302,15 @@ export function OpsChrome({ active, onNav, onOpenSearch, onSignOut, children }: 
         </button>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          <button style={chromeIconBtn} aria-label="Notifications">
-            <OpsIcon name="bell" color="#F4F7FA" size={16} />
-          </button>
+          <NotificationBell tone="dark" />
           {onSignOut && (
             <button onClick={onSignOut} aria-label="Sign Out" style={chromeIconBtn}>
               <OpsIcon name="log-out" color="#F4F7FA" size={16} />
             </button>
           )}
           <div
-            aria-label="Profile"
+            aria-label={`Signed in as ${profile?.full_name ?? profile?.email ?? 'manager'}`}
+            title={profile?.email ?? ''}
             style={{
               width: 32,
               height: 32,
@@ -292,7 +325,7 @@ export function OpsChrome({ active, onNav, onOpenSearch, onSignOut, children }: 
               fontWeight: 500,
             }}
           >
-            JA
+            {initials || 'M'}
           </div>
         </div>
       </header>
@@ -339,7 +372,7 @@ export function OpsChrome({ active, onNav, onOpenSearch, onSignOut, children }: 
                 color: '#1A1A1A',
               }}
             >
-              14
+              {todaysBookings.length}
             </span>
             <span
               style={{
@@ -348,7 +381,7 @@ export function OpsChrome({ active, onNav, onOpenSearch, onSignOut, children }: 
                 color: 'var(--color-mist)',
               }}
             >
-              Visits scheduled
+              {todaysBookings.length === 1 ? 'Visit scheduled' : 'Visits scheduled'}
             </span>
           </div>
           <OpsHairline width="100%" color="var(--color-taupe)" margin="10px 0" />
@@ -360,7 +393,8 @@ export function OpsChrome({ active, onNav, onOpenSearch, onSignOut, children }: 
               lineHeight: 1.5,
             }}
           >
-            3 attendants on premises. 1 awaiting access.
+            {onSiteAttendants} attendant{onSiteAttendants === 1 ? '' : 's'} on premises.
+            {awaitingAccess > 0 ? ` ${awaitingAccess} awaiting access.` : ''}
           </div>
         </div>
       </aside>
@@ -381,6 +415,50 @@ export function OpsChrome({ active, onNav, onOpenSearch, onSignOut, children }: 
         className="ops-main"
         style={{ marginLeft: 240, paddingTop: 64, minHeight: '100vh' }}
       >
+        {viewingAsSuperAdmin && (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12,
+              padding: '10px clamp(20px, 4vw, 32px)',
+              background: 'rgba(196,151,62,0.10)',
+              borderBottom: '1px solid var(--color-champagne)',
+              fontFamily: 'var(--font-sans)',
+              fontSize: 12,
+              color: 'var(--color-charcoal)',
+            }}
+          >
+            <OpsIcon name="shield-check" size={14} color="var(--color-champagne-deep)" />
+            <span>
+              Viewing <strong>{propertyName}</strong> as super admin. Changes are recorded
+              under your account.
+            </span>
+            <button
+              type="button"
+              onClick={() => navigate('/admin')}
+              style={{
+                marginLeft: 'auto',
+                background: 'transparent',
+                border: '1px solid var(--color-champagne)',
+                color: 'var(--color-champagne-deep)',
+                padding: '5px 12px',
+                borderRadius: 4,
+                cursor: 'pointer',
+                fontFamily: 'var(--font-sans)',
+                fontSize: 11,
+                letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+              }}
+            >
+              <OpsIcon name="arrow-left" size={11} color="var(--color-champagne-deep)" />
+              Back to Admin
+            </button>
+          </div>
+        )}
         {children}
       </main>
 

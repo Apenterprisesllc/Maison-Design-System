@@ -1,18 +1,18 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Button, Eyebrow, Hairline, Icon, StepIndicator, useLucide } from '../../components';
+import { Button, Eyebrow, Hairline, Icon, StepIndicator, useLucide, useToast } from '../../components';
 import { usePortal } from './context';
 import { Calendar, TimeSlots } from './Calendar';
 import type { TimeSlot } from './types';
 
-const SLOTS: TimeSlot[] = [
+const SLOT_DEFINITIONS: TimeSlot[] = [
   { id: '0900', label: '9:00 AM' },
   { id: '1030', label: '10:30 AM' },
   { id: '1200', label: '12:00 PM' },
-  { id: '1330', label: '1:30 PM', disabled: true },
+  { id: '1330', label: '1:30 PM' },
   { id: '1500', label: '3:00 PM' },
   { id: '1630', label: '4:30 PM' },
-  { id: '1800', label: '6:00 PM', disabled: true },
+  { id: '1800', label: '6:00 PM' },
   { id: '1930', label: '7:30 PM' },
 ];
 
@@ -21,7 +21,8 @@ const NOTE_MAX = 240;
 export function BookingFlow() {
   const { serviceId } = useParams<{ serviceId: string }>();
   const navigate = useNavigate();
-  const { getServiceById, addBooking } = usePortal();
+  const toast = useToast();
+  const { getServiceById, addBooking, hasUnit, loading, loadBookedSlotsForDate, busyDates } = usePortal();
   const service = serviceId ? getServiceById(serviceId) : undefined;
   useLucide();
 
@@ -29,26 +30,66 @@ export function BookingFlow() {
   const [time, setTime] = useState<string | null>(null);
   const [note, setNote] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [bookedSlotIds, setBookedSlotIds] = useState<Set<string>>(new Set());
+  const [checkingAvailability, setCheckingAvailability] = useState(false);
 
-  if (!service) {
+  // Re-query availability whenever the user changes the selected date.
+  useEffect(() => {
+    let cancelled = false;
+    if (!date || !hasUnit) {
+      setBookedSlotIds(new Set());
+      return;
+    }
+    setCheckingAvailability(true);
+    setTime(null);
+    loadBookedSlotsForDate(date)
+      .then((set) => {
+        if (!cancelled) setBookedSlotIds(set);
+      })
+      .catch(() => {
+        if (!cancelled) setBookedSlotIds(new Set());
+      })
+      .finally(() => {
+        if (!cancelled) setCheckingAvailability(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [date, hasUnit, loadBookedSlotsForDate]);
+
+  const slots = useMemo<TimeSlot[]>(
+    () =>
+      SLOT_DEFINITIONS.map((s) => ({
+        ...s,
+        disabled: bookedSlotIds.has(s.id),
+      })),
+    [bookedSlotIds],
+  );
+
+  if (!service && !loading) {
     // Bad URL — bounce back to catalogue
     navigate('/portal', { replace: true });
     return null;
   }
+  if (!service) return null;
 
-  const canContinue = !!(date && time) && note.length <= NOTE_MAX && !submitting;
+  const canContinue = !!(date && time) && note.length <= NOTE_MAX && !submitting && hasUnit;
   const currentStep = !date ? 1 : !time ? 2 : 3;
   const noteRemaining = NOTE_MAX - note.length;
 
-  function confirm() {
-    if (!service || !date || !time) return;
-    const timeLabel = SLOTS.find((s) => s.id === time)?.label ?? '';
+  async function confirm() {
+    if (!service || !date || !time || !hasUnit) return;
+    const timeLabel = slots.find((s) => s.id === time)?.label ?? '';
     setSubmitting(true);
-    // Mock backend latency
-    window.setTimeout(() => {
-      const created = addBooking({ service: service!, date: date!, time: timeLabel, note });
+    try {
+      const created = await addBooking({ service: service!, date: date!, time: timeLabel, note });
       navigate(`/portal/services/${service!.id}/confirm?bookingId=${created.id}`);
-    }, 800);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Could not schedule. Try again.';
+      toast.error(message);
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -132,7 +173,7 @@ export function BookingFlow() {
           <section style={{ marginTop: 40 }}>
             <Eyebrow>Date · Pick a window</Eyebrow>
             <div style={{ height: 16 }} />
-            <Calendar selectedDate={date} onSelect={setDate} />
+            <Calendar selectedDate={date} onSelect={setDate} busyDates={busyDates} />
           </section>
 
           <section style={{ marginTop: 48 }}>
@@ -146,9 +187,13 @@ export function BookingFlow() {
                 margin: '0 0 10px',
               }}
             >
-              Available windows for the selected date.
+              {!date
+                ? 'Pick a date to see availability.'
+                : checkingAvailability
+                  ? 'Checking availability…'
+                  : 'Available windows for the selected date.'}
             </p>
-            <TimeSlots slots={SLOTS} selected={time} onSelect={setTime} />
+            <TimeSlots slots={slots} selected={time} onSelect={setTime} />
           </section>
 
           <section style={{ marginTop: 48 }}>
@@ -241,7 +286,7 @@ export function BookingFlow() {
                   : '—'
               }
             />
-            <Row label="Time" value={time ? SLOTS.find((s) => s.id === time)?.label ?? '—' : '—'} />
+            <Row label="Time" value={time ? slots.find((s) => s.id === time)?.label ?? '—' : '—'} />
             <Row label="Cadence" value={service.cadence} />
           </div>
 
@@ -308,11 +353,13 @@ export function BookingFlow() {
                 textAlign: 'center',
               }}
             >
-              {!date
-                ? 'Pick a date to continue.'
-                : !time
-                  ? 'Pick a time to continue.'
-                  : 'Shorten the note to continue.'}
+              {!hasUnit
+                ? 'A residence must be on file. Contact the front desk.'
+                : !date
+                  ? 'Pick a date to continue.'
+                  : !time
+                    ? 'Pick a time to continue.'
+                    : 'Shorten the note to continue.'}
             </p>
           )}
         </aside>

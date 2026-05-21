@@ -54,24 +54,36 @@ export function Account() {
     return filtered;
   }, [bookings, filter, sort]);
 
-  function confirmCancel() {
+  async function confirmCancel() {
     if (!cancelTarget) return;
     const id = cancelTarget.id;
-    cancelBooking(id, cancelReason);
-    setCancelTarget(null);
-    setCancelReason('');
-    toast.success('Visit cancelled.');
+    try {
+      await cancelBooking(id, cancelReason);
+      toast.success('Visit cancelled.');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Could not cancel. Try again.';
+      toast.error(message);
+    } finally {
+      setCancelTarget(null);
+      setCancelReason('');
+    }
   }
 
-  function confirmReschedule() {
+  async function confirmReschedule() {
     if (!rescheduleTarget) return;
-    const service = rescheduleBooking(rescheduleTarget.id);
-    setRescheduleTarget(null);
-    if (service) {
-      navigate(`/portal/services/${service.id}/book`);
-      toast.info('Pick a new date for this visit.');
-    } else {
-      toast.error('Service no longer available.');
+    try {
+      const service = await rescheduleBooking(rescheduleTarget.id);
+      setRescheduleTarget(null);
+      if (service) {
+        navigate(`/portal/services/${service.id}/book`);
+        toast.info('Pick a new date for this visit.');
+      } else {
+        toast.error('Service no longer available.');
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Could not reschedule. Try again.';
+      toast.error(message);
+      setRescheduleTarget(null);
     }
   }
 

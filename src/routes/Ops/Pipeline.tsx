@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import {
   DndContext,
   DragOverlay,
@@ -11,6 +11,7 @@ import {
 import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
 import { useReveal, useToast } from '../../components';
 import { CountUp } from '../../components';
+import { buildCsv, downloadCsv } from '../../utils/csv';
 import { useOps } from './context';
 import {
   Kpi,
@@ -39,12 +40,43 @@ const COLS: Col[] = [
   { id: 'closed', label: 'Closed Today' },
 ];
 
+const ALL_STATUSES: BookingStatus[] = ['scheduled', 'enroute', 'active', 'closed', 'cancelled'];
+
 export function Pipeline() {
   const toast = useToast();
-  const { bookings, openBooking, openNewBooking, setBookingStatus } = useOps();
+  const { bookings, openBooking, openNewBooking, setBookingStatus, propertyName } = useOps();
   const ref = useReveal<HTMLDivElement>({ y: 16, stagger: 0.04, rootMargin: '0px 0px -2% 0px' });
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
   const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<Set<BookingStatus>>(new Set(ALL_STATUSES));
+  const [attendantFilter, setAttendantFilter] = useState<string>('');
+  const filtersAnchor = useRef<HTMLDivElement>(null);
+
+  const todayLabel = useMemo(
+    () =>
+      new Date().toLocaleDateString('en-US', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      }),
+    [],
+  );
+
+  const attendantOptions = useMemo(() => {
+    const set = new Set<string>();
+    for (const b of bookings) if (b.attendant && b.attendant !== '—') set.add(b.attendant);
+    return Array.from(set).sort();
+  }, [bookings]);
+
+  const filtered = useMemo(() => {
+    return bookings.filter((b) => {
+      if (!statusFilter.has(b.status)) return false;
+      if (attendantFilter && b.attendant !== attendantFilter) return false;
+      return true;
+    });
+  }, [bookings, statusFilter, attendantFilter]);
 
   const grouped = useMemo(() => {
     const map: Record<BookingStatus, OpsBooking[]> = {
@@ -54,29 +86,78 @@ export function Pipeline() {
       closed: [],
       cancelled: [],
     };
-    for (const b of bookings) {
+    for (const b of filtered) {
       if (map[b.status]) map[b.status].push(b);
     }
     return map;
-  }, [bookings]);
+  }, [filtered]);
 
-  const visitsToday = bookings.filter((b) => b.status !== 'cancelled').length;
+  const visitsToday = filtered.filter((b) => b.status !== 'cancelled').length;
   const onSite = grouped.active.length;
-  const awaitingAccess = bookings.filter((b) => b.note?.toLowerCase().includes('awaiting')).length;
+  const awaitingAccess = filtered.filter((b) => b.note?.toLowerCase().includes('awaiting')).length;
+  const arrivedBookings = filtered.filter((b) => b.arrivedAt);
+  const onTimeBookings = arrivedBookings.filter((b) => {
+    if (!b.arrivedAt) return false;
+    const arrived = new Date(b.arrivedAt).getTime();
+    const scheduled = new Date(b.scheduledAt).getTime();
+    // 15 min grace.
+    return arrived - scheduled <= 15 * 60 * 1000;
+  });
+  const onTimePct =
+    arrivedBookings.length === 0
+      ? 0
+      : Math.round((onTimeBookings.length / arrivedBookings.length) * 100);
+
+  const filtersActive = statusFilter.size < ALL_STATUSES.length || !!attendantFilter;
+
+  function toggleStatus(s: BookingStatus) {
+    setStatusFilter((prev) => {
+      const next = new Set(prev);
+      if (next.has(s)) next.delete(s);
+      else next.add(s);
+      return next;
+    });
+  }
+
+  function clearFilters() {
+    setStatusFilter(new Set(ALL_STATUSES));
+    setAttendantFilter('');
+  }
+
+  function exportPipeline() {
+    const csv = buildCsv(filtered, [
+      { header: 'Ref', accessor: (b) => b.reference },
+      { header: 'Date', accessor: (b) => b.date },
+      { header: 'Time', accessor: (b) => b.time },
+      { header: 'Residence', accessor: (b) => b.unit },
+      { header: 'Resident', accessor: (b) => b.resident },
+      { header: 'Service', accessor: (b) => b.service },
+      { header: 'Attendant', accessor: (b) => b.attendant },
+      { header: 'Status', accessor: (b) => STATUS_LABEL[b.status] },
+      { header: 'Price', accessor: (b) => b.price },
+    ]);
+    downloadCsv(`apenterprises-pipeline-${Date.now()}.csv`, csv);
+    toast.success(`${filtered.length} bookings exported.`);
+  }
 
   function onDragStart(e: DragStartEvent) {
     setDraggingId(e.active.id as string);
   }
 
-  function onDragEnd(e: DragEndEvent) {
+  async function onDragEnd(e: DragEndEvent) {
     setDraggingId(null);
     if (!e.over) return;
     const id = e.active.id as string;
     const newStatus = e.over.id as BookingStatus;
     const booking = bookings.find((b) => b.id === id);
     if (!booking || booking.status === newStatus) return;
-    setBookingStatus(id, newStatus);
-    toast.success(`${id} → ${STATUS_LABEL[newStatus]}.`);
+    try {
+      await setBookingStatus(id, newStatus);
+      toast.success(`${booking.reference} → ${STATUS_LABEL[newStatus]}.`);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Could not update. Reverted.';
+      toast.error(message);
+    }
   }
 
   const activeBooking = draggingId ? bookings.find((b) => b.id === draggingId) : null;
@@ -98,7 +179,7 @@ export function Pipeline() {
         }}
       >
         <div>
-          <OpsEyebrow>Thursday, 14 May 2026</OpsEyebrow>
+          <OpsEyebrow>{todayLabel} · {propertyName}</OpsEyebrow>
           <h1
             style={{
               fontFamily: 'Fraunces, serif',
@@ -112,16 +193,122 @@ export function Pipeline() {
             Pipeline
           </h1>
         </div>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <OpsButton variant="ghost" icon="filter">
-            Filters
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', position: 'relative' }} ref={filtersAnchor}>
+          <OpsButton
+            variant={filtersActive ? 'secondary' : 'ghost'}
+            icon="filter"
+            onClick={() => setFiltersOpen((v) => !v)}
+          >
+            {filtersActive ? `Filters · ${[...statusFilter].length}/${ALL_STATUSES.length}` : 'Filters'}
           </OpsButton>
-          <OpsButton variant="ghost" icon="download">
+          <OpsButton variant="ghost" icon="download" onClick={exportPipeline}>
             Export
           </OpsButton>
           <OpsButton variant="primary" icon="plus" onClick={() => openNewBooking()}>
             New Booking
           </OpsButton>
+
+          {filtersOpen && (
+            <div
+              role="dialog"
+              aria-label="Pipeline filters"
+              style={{
+                position: 'absolute',
+                top: 'calc(100% + 8px)',
+                right: 0,
+                width: 280,
+                background: 'var(--bg-surface)',
+                border: '1px solid var(--color-taupe)',
+                borderRadius: 6,
+                boxShadow: 'var(--shadow-2)',
+                padding: 16,
+                zIndex: 30,
+              }}
+            >
+              <OpsEyebrow>Status</OpsEyebrow>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 10 }}>
+                {ALL_STATUSES.map((s) => (
+                  <label
+                    key={s}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 10,
+                      cursor: 'pointer',
+                      fontFamily: 'var(--font-sans)',
+                      fontSize: 13,
+                      color: 'var(--color-charcoal)',
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={statusFilter.has(s)}
+                      onChange={() => toggleStatus(s)}
+                    />
+                    {STATUS_LABEL[s]}
+                  </label>
+                ))}
+              </div>
+
+              <OpsHairline color="var(--color-taupe-soft)" width="100%" margin="14px 0" />
+
+              <OpsEyebrow>Attendant</OpsEyebrow>
+              <select
+                value={attendantFilter}
+                onChange={(e) => setAttendantFilter(e.target.value)}
+                style={{
+                  marginTop: 8,
+                  width: '100%',
+                  padding: '8px 10px',
+                  fontFamily: 'var(--font-sans)',
+                  fontSize: 13,
+                  border: '1px solid var(--color-taupe)',
+                  borderRadius: 4,
+                  background: 'transparent',
+                  color: 'var(--color-charcoal)',
+                }}
+              >
+                <option value="">All</option>
+                {attendantOptions.map((a) => (
+                  <option key={a} value={a}>{a}</option>
+                ))}
+              </select>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 14 }}>
+                <button
+                  type="button"
+                  onClick={clearFilters}
+                  style={{
+                    background: 'transparent',
+                    border: 0,
+                    cursor: 'pointer',
+                    fontFamily: 'var(--font-sans)',
+                    fontSize: 12,
+                    color: 'var(--color-mist)',
+                    padding: 0,
+                  }}
+                >
+                  Clear
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFiltersOpen(false)}
+                  style={{
+                    background: 'var(--color-ink)',
+                    color: 'var(--color-cream)',
+                    border: 0,
+                    cursor: 'pointer',
+                    fontFamily: 'var(--font-sans)',
+                    fontSize: 12,
+                    padding: '6px 12px',
+                    borderRadius: 4,
+                  }}
+                >
+                  Done
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -157,10 +344,14 @@ export function Pipeline() {
         />
         <Kpi
           label="On-Time Arrivals"
-          value={<CountUp to={98} duration={1.6} />}
+          value={<CountUp to={onTimePct} duration={1.6} />}
           sup="%"
-          delta="+1.2 pts"
-          deltaTone="success"
+          delta={
+            arrivedBookings.length === 0
+              ? 'Mark arrivals to populate'
+              : `${onTimeBookings.length} of ${arrivedBookings.length}`
+          }
+          deltaTone={arrivedBookings.length === 0 ? 'neutral' : 'success'}
         />
       </div>
 
@@ -301,7 +492,7 @@ function DraggableCard({ item, onClick }: { item: OpsBooking; onClick: () => voi
       ref={setNodeRef}
       {...attributes}
       {...listeners}
-      onClick={(e) => {
+      onClick={() => {
         // dnd-kit may swallow click; check if drag happened via isDragging on click time
         if (!isDragging) onClick();
       }}

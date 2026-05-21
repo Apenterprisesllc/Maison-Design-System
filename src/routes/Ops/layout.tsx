@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import gsap from 'gsap';
 import { ToastProvider } from '../../components';
+import { useAuth } from '../../lib/auth';
 import { CommandPalette } from './CommandPalette';
 import { OpsProvider, useOps } from './context';
 import { BookingDetailDrawer } from './BookingDetailDrawer';
@@ -33,6 +34,12 @@ function OpsShell() {
   const location = useLocation();
   const viewRef = useRef<HTMLDivElement>(null);
   const { togglePalette, openPalette } = useOps();
+  const { signOut } = useAuth();
+
+  async function handleSignOut() {
+    await signOut();
+    navigate('/', { replace: true });
+  }
 
   const activeView = pathToView(location.pathname);
 
@@ -67,7 +74,7 @@ function OpsShell() {
         active={activeView}
         onNav={(v) => navigate(PATH_FOR_VIEW[v])}
         onOpenSearch={openPalette}
-        onSignOut={() => navigate('/')}
+        onSignOut={handleSignOut}
       >
         <div ref={viewRef} key={location.pathname} style={{ willChange: 'transform, opacity' }}>
           <Outlet />

@@ -22,47 +22,56 @@ const FADE_MS = 220;
  *  1. Path changes → we mark `phase=out`, current children fade out.
  *  2. After FADE_MS we swap in the new children, scroll to top, and mark
  *     `phase=in` → they fade back up.
+ *
+ * IMPORTANT — the transition effect deliberately does NOT depend on
+ * `children`. JSX produces a fresh `children` reference on every render of
+ * the parent (router state changes, auth context settling, realtime
+ * subscriptions, etc.). If `children` were a dep, every unrelated re-render
+ * would clear the fade-out timer, leaving the wrapper stuck at `phase='out'`
+ * (opacity 0 + `pointer-events: none`) — clicks would silently fail. A
+ * separate effect keeps `rendered.node` in sync with the latest children
+ * when the key matches, with no timer involvement.
  */
 export function PageTransition({ children, transitionKey }: PageTransitionProps) {
   const location = useLocation();
   const key = transitionKey ?? location.pathname;
+  const childrenRef = useRef<ReactNode>(children);
+  childrenRef.current = children;
+
   const [rendered, setRendered] = useState<{ key: string; node: ReactNode }>({
     key,
     node: children,
   });
   const [phase, setPhase] = useState<'in' | 'out'>('in');
-  const timerRef = useRef<number | null>(null);
 
+  // Key-change transition. NO `children` in deps — see comment above.
   useEffect(() => {
-    // Same key — keep children fresh without animating.
-    if (rendered.key === key) {
-      setRendered((prev) => ({ ...prev, node: children }));
-      return;
-    }
+    if (rendered.key === key) return;
 
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
     if (reduceMotion) {
-      setRendered({ key, node: children });
+      setRendered({ key, node: childrenRef.current });
       window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
       return;
     }
 
     setPhase('out');
-    if (timerRef.current !== null) window.clearTimeout(timerRef.current);
-    timerRef.current = window.setTimeout(() => {
-      setRendered({ key, node: children });
+    const timer = window.setTimeout(() => {
+      setRendered({ key, node: childrenRef.current });
       window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
       requestAnimationFrame(() => setPhase('in'));
     }, FADE_MS);
+    return () => window.clearTimeout(timer);
+  }, [key, rendered.key]);
 
-    return () => {
-      if (timerRef.current !== null) {
-        window.clearTimeout(timerRef.current);
-        timerRef.current = null;
-      }
-    };
-  }, [key, children, rendered.key]);
+  // Keep rendered.node fresh when children change without a key change —
+  // e.g. a list inside the active route updates after a fetch. No animation
+  // reset, no timer.
+  useEffect(() => {
+    if (rendered.key === key) {
+      setRendered((prev) => (prev.node === children ? prev : { key, node: children }));
+    }
+  }, [children, key, rendered.key]);
 
   return (
     <div
@@ -71,6 +80,9 @@ export function PageTransition({ children, transitionKey }: PageTransitionProps)
         transform: phase === 'in' ? 'translate3d(0, 0, 0)' : 'translate3d(0, -6px, 0)',
         transition: `opacity ${FADE_MS}ms cubic-bezier(0.4, 0, 0.2, 1), transform ${FADE_MS}ms cubic-bezier(0.4, 0, 0.2, 1)`,
         willChange: 'transform, opacity',
+        // Disable interactions during the fade-out so clicks aren't routed to
+        // soon-to-be-stale handlers (e.g. a header logo on the outgoing page).
+        pointerEvents: phase === 'in' ? 'auto' : 'none',
       }}
     >
       {rendered.node}

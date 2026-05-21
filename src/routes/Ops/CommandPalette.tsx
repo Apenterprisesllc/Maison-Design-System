@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
-import { Eyebrow, Hairline, Icon, useLucide } from '../../components';
+import { Eyebrow, Icon, useLucide } from '../../components';
 import { useOps } from './context';
 
 interface CommandItem {
@@ -113,11 +113,11 @@ export function CommandPalette() {
     bookings.forEach((b) => {
       list.push({
         id: `b-${b.id}`,
-        label: `${b.id} · ${b.service}`,
+        label: `${b.reference} · ${b.service}`,
         hint: `${b.date} ${b.time} · Res. ${b.unit} · ${b.resident}`,
         icon: 'calendar-check',
         group: 'bookings',
-        match: `${b.id} ${b.service} ${b.unit} ${b.resident} ${b.attendant}`.toLowerCase(),
+        match: `${b.reference} ${b.service} ${b.unit} ${b.resident} ${b.attendant}`.toLowerCase(),
         run: () => {
           closePalette();
           openBooking(b.id);

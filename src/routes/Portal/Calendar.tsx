@@ -7,6 +7,8 @@ import type { TimeSlot } from './types';
 export interface CalendarProps {
   selectedDate: Date | null;
   onSelect: (d: Date) => void;
+  /** Dates with existing bookings (yyyy-mm-dd). Rendered with a subtle dot. */
+  busyDates?: Set<string>;
 }
 
 function isSameDay(a: Date, b: Date): boolean {
@@ -17,7 +19,14 @@ function isSameDay(a: Date, b: Date): boolean {
   );
 }
 
-export function Calendar({ selectedDate, onSelect }: CalendarProps) {
+function dateKey(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+export function Calendar({ selectedDate, onSelect, busyDates }: CalendarProps) {
   const today = new Date();
   const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
   const [monthOffset, setMonthOffset] = useState(0);
@@ -142,6 +151,7 @@ export function Calendar({ selectedDate, onSelect }: CalendarProps) {
             const past = cellDate < todayStart;
             const isToday = isSameDay(cellDate, today);
             const sel = !!selectedDate && isSameDay(cellDate, selectedDate);
+            const isBusy = !past && !!busyDates?.has(dateKey(cellDate));
 
             return (
               <button
@@ -213,6 +223,22 @@ export function Calendar({ selectedDate, onSelect }: CalendarProps) {
                       height: 5,
                       borderRadius: '50%',
                       background: 'var(--color-champagne-deep)',
+                    }}
+                  />
+                )}
+                {isBusy && !sel && (
+                  <span
+                    aria-label={`${1} booking on this day`}
+                    title="You have a booking on this day"
+                    style={{
+                      position: 'absolute',
+                      right: 8,
+                      bottom: 8,
+                      width: 5,
+                      height: 5,
+                      borderRadius: '50%',
+                      background: 'var(--color-mist)',
+                      opacity: 0.6,
                     }}
                   />
                 )}

@@ -61,6 +61,8 @@ export type { StepIndicatorProps } from './StepIndicator';
 export { HelpPopover } from './HelpPopover';
 export type { HelpPopoverProps } from './HelpPopover';
 
+export { NotificationBell } from './NotificationBell';
+
 export { useLucide } from '../hooks/useLucide';
 export { useReveal } from '../hooks/useReveal';
 export { useCountUp } from '../hooks/useCountUp';

@@ -1,6 +1,5 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import type { ChangeEvent, InputHTMLAttributes, ReactNode } from 'react';
-import { Eyebrow } from './Eyebrow';
 import { Icon } from './Icon';
 
 export type FieldStatus = 'default' | 'error' | 'success';
@@ -42,12 +41,26 @@ export function Field({
 }: FieldProps) {
   const [focused, setFocused] = useState(false);
   const borderColor = focused ? 'var(--color-ink)' : HAIRLINE_COLOR[status];
+  const inputId = useId();
+  const hintId = hint ? `${inputId}-hint` : undefined;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-      <Eyebrow>{label}</Eyebrow>
+      <label
+        htmlFor={inputId}
+        style={{
+          fontFamily: 'var(--font-sans)',
+          fontSize: 11,
+          letterSpacing: '0.16em',
+          textTransform: 'uppercase',
+          color: 'var(--color-mist)',
+        }}
+      >
+        {label}
+      </label>
       <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
         <input
+          id={inputId}
           type={type}
           value={value}
           onChange={onChange}
@@ -55,6 +68,7 @@ export function Field({
           autoComplete={autoComplete}
           required={required}
           aria-invalid={status === 'error' || undefined}
+          aria-describedby={hintId}
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
           style={{
@@ -101,6 +115,7 @@ export function Field({
       </div>
       {hint && (
         <span
+          id={hintId}
           style={{
             fontFamily: 'var(--font-sans)',
             fontSize: 12,

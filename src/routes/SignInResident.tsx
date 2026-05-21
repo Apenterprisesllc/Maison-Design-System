@@ -2,6 +2,7 @@ import { useEffect, useMemo } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Eyebrow, BrandMark, useLucide } from '../components';
 import { IMAGERY } from '../data/imagery';
+import { useAuth } from '../lib/auth';
 import { SignIn as SignInForm } from './Portal/SignIn';
 import type { ClientTrack } from './Portal/types';
 
@@ -36,24 +37,44 @@ const TRACK_COPY: Record<
   },
 };
 
-function readTrack(param: string | null): ClientTrack {
+function readTrackParam(param: string | null): ClientTrack | null {
   if (param === 'commercial' || param === 'residential') return param;
-  const stored = typeof window !== 'undefined' ? window.sessionStorage.getItem('apTrack') : null;
-  return stored === 'commercial' ? 'commercial' : 'residential';
+  return null;
 }
 
 export function SignInResident() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
+  const { status, profile } = useAuth();
   useLucide();
 
-  const track = useMemo<ClientTrack>(() => readTrack(params.get('track')), [params]);
-  const copy = TRACK_COPY[track];
+  // Two distinct concerns:
+  //   - expectedTrack: only set when ?track= is explicit. Drives validation.
+  //   - displayTrack:  always residential|commercial. Drives the aside copy.
+  const expectedTrack = useMemo<ClientTrack | null>(
+    () => readTrackParam(params.get('track')),
+    [params],
+  );
+  const displayTrack: ClientTrack = expectedTrack ?? 'residential';
+  const copy = TRACK_COPY[displayTrack];
 
+  // If the user is already signed in AND belongs on the resident portal for
+  // this track, send them through. Wrong-role / wrong-track sessions are
+  // left to the form's handle() to reject + display the shortcut, so the
+  // useEffect must not navigate away mid-validation.
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-    window.sessionStorage.setItem('apTrack', track);
-  }, [track]);
+    if (status !== 'authenticated' || !profile) return;
+    if (profile.must_change_password) {
+      navigate('/auth/reset', { replace: true });
+      return;
+    }
+    const isResident = profile.role === 'resident' || profile.role === 'attendant';
+    if (!isResident) return;
+    if (expectedTrack && profile.primary_track && profile.primary_track !== expectedTrack) {
+      return;
+    }
+    navigate('/portal', { replace: true });
+  }, [status, profile, navigate, expectedTrack]);
 
   return (
     <div
@@ -116,7 +137,10 @@ export function SignInResident() {
             padding: 'clamp(24px, 5vw, 64px)',
           }}
         >
-          <SignInForm onSignIn={() => navigate('/portal', { state: { track } })} />
+          <SignInForm
+            onSignIn={() => navigate('/portal', { replace: true })}
+            expectedTrack={expectedTrack}
+          />
         </main>
 
         <footer

@@ -56,7 +56,7 @@ export function Confirmation() {
     if (!booking) return;
     const ics = buildIcs(
       {
-        id: booking.id,
+        id: booking.reference,
         dateLabel: booking.dateLabel,
         time: booking.time,
         serviceName: booking.serviceName,
@@ -68,7 +68,7 @@ export function Confirmation() {
     );
     downloadIcs(
       bookingIcsFilename({
-        id: booking.id,
+        id: booking.reference,
         dateLabel: booking.dateLabel,
         time: booking.time,
         serviceName: booking.serviceName,
@@ -166,7 +166,7 @@ export function Confirmation() {
         }}
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <RowL label="Reference" value={booking.id.toUpperCase()} />
+          <RowL label="Reference" value={booking.reference} />
           <RowL label="Service" value={booking.serviceName} />
           <RowL label="Date" value={booking.dateLabel} />
           <RowL label="Time" value={booking.time} />

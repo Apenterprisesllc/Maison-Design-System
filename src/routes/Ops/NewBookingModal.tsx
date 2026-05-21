@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Button, Eyebrow, Hairline, Modal, StepIndicator, useToast } from '../../components';
 import { useOps } from './context';
-import { SERVICES } from './data';
+import { cadenceLabel } from '../../lib/mappers/service';
+import type { ServiceRow } from '../../lib/types/db';
 
 const TIMES = ['8:00', '9:00', '10:30', '12:00', '14:00', '15:30', '17:00'];
 
@@ -12,6 +13,8 @@ export function NewBookingModal() {
     closeNewBooking,
     newBookingPrefill,
     units,
+    services,
+    attendants,
     createBooking,
     openBooking,
   } = useOps();
@@ -22,6 +25,7 @@ export function NewBookingModal() {
   const [date, setDate] = useState('15 May');
   const [time, setTime] = useState('');
   const [note, setNote] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (newBookingOpen) {
@@ -38,6 +42,11 @@ export function NewBookingModal() {
     () => [...units].sort((a, b) => a.id.localeCompare(b.id)),
     [units],
   );
+  const sortedServices = useMemo(
+    () => [...services].sort((a, b) => a.sort_order - b.sort_order),
+    [services],
+  );
+  const defaultAttendantName = attendants[0]?.name ?? '—';
 
   const canAdvance =
     (step === 1 && !!unit && !!serviceKey) || (step === 2 && !!date && !!time) || step === 3;
@@ -47,12 +56,20 @@ export function NewBookingModal() {
     else if (step === 2) setStep(3);
   }
 
-  function submit() {
-    const created = createBooking({ unit, serviceKey, date, time, note });
-    toast.success(`${created.id} scheduled for ${created.date} at ${created.time}.`);
-    closeNewBooking();
-    // Open the new booking's drawer after a beat so the user can review
-    setTimeout(() => openBooking(created.id), 220);
+  async function submit() {
+    if (submitting) return;
+    setSubmitting(true);
+    try {
+      const created = await createBooking({ unit, serviceKey, date, time, note });
+      toast.success(`${created.reference} scheduled for ${created.date} at ${created.time}.`);
+      closeNewBooking();
+      setTimeout(() => openBooking(created.id), 220);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Could not schedule. Try again.';
+      toast.error(message);
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -80,8 +97,14 @@ export function NewBookingModal() {
             </Button>
           )}
           {step === 3 && (
-            <Button variant="primary" onClick={submit} iconAfter="arrow-right">
-              Schedule Visit
+            <Button
+              variant="primary"
+              onClick={submit}
+              iconAfter={submitting ? undefined : 'arrow-right'}
+              loading={submitting}
+              disabled={submitting}
+            >
+              {submitting ? 'Scheduling' : 'Schedule Visit'}
             </Button>
           )}
         </>
@@ -118,6 +141,18 @@ export function NewBookingModal() {
           <Hairline color="var(--color-taupe-soft)" width="100%" margin="20px 0" />
 
           <Eyebrow>Service</Eyebrow>
+          {sortedServices.length === 0 && (
+            <p
+              style={{
+                marginTop: 10,
+                fontFamily: 'var(--font-sans)',
+                fontSize: 12,
+                color: 'var(--color-mist-soft)',
+              }}
+            >
+              No services configured. Contact AP Enterprises support.
+            </p>
+          )}
           <div
             style={{
               display: 'grid',
@@ -126,13 +161,13 @@ export function NewBookingModal() {
               marginTop: 10,
             }}
           >
-            {SERVICES.map((s) => {
-              const sel = s.key === serviceKey;
+            {sortedServices.map((s) => {
+              const sel = s.slug === serviceKey;
               return (
                 <button
                   type="button"
-                  key={s.key}
-                  onClick={() => setServiceKey(s.key)}
+                  key={s.id}
+                  onClick={() => setServiceKey(s.slug)}
                   style={{
                     padding: '12px 14px',
                     background: sel ? 'var(--color-ink)' : 'transparent',
@@ -162,7 +197,7 @@ export function NewBookingModal() {
                       marginTop: 4,
                     }}
                   >
-                    ${s.price} · {s.cadence}
+                    ${Math.round(s.price_cents / 100)} · {cadenceLabel(s.cadence)}
                   </div>
                 </button>
               );
@@ -250,7 +285,8 @@ export function NewBookingModal() {
       {step === 3 && (
         <ReviewCard
           unit={unit}
-          serviceKey={serviceKey}
+          service={sortedServices.find((s) => s.slug === serviceKey) ?? null}
+          attendantName={defaultAttendantName}
           date={date}
           time={time}
           note={note}
@@ -289,18 +325,19 @@ const textInputStyle: React.CSSProperties = {
 
 function ReviewCard({
   unit,
-  serviceKey,
+  service,
+  attendantName,
   date,
   time,
   note,
 }: {
   unit: string;
-  serviceKey: string;
+  service: ServiceRow | null;
+  attendantName: string;
   date: string;
   time: string;
   note: string;
 }) {
-  const service = SERVICES.find((s) => s.key === serviceKey);
   return (
     <div>
       <div
@@ -315,8 +352,8 @@ function ReviewCard({
         <ReviewRow label="Service" value={service?.name ?? '—'} />
         <ReviewRow label="Date" value={date} />
         <ReviewRow label="Time" value={time || '—'} />
-        <ReviewRow label="Attendant" value={service?.attendant ?? '—'} />
-        <ReviewRow label="Charge" value={service ? `$${service.price}` : '—'} />
+        <ReviewRow label="Attendant" value={attendantName} />
+        <ReviewRow label="Charge" value={service ? `$${Math.round(service.price_cents / 100)}` : '—'} />
         {note && <ReviewRow label="Note" value={note} />}
       </div>
       <p

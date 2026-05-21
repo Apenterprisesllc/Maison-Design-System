@@ -1,13 +1,43 @@
-import { createContext, useCallback, useContext, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
-import type { BookingStatus, OpsBooking, OpsUnit } from './data';
-import { SEED_BOOKINGS, SEED_UNITS } from './data';
+import { useSearchParams } from 'react-router-dom';
+import { useAuth } from '../../lib/auth';
+import { listAttendantsForProperty } from '../../lib/api/attendants';
+import { listAllServices } from '../../lib/api/services';
+import {
+  listBookingsForProperty,
+  createBooking as apiCreateBooking,
+  updateBookingStatus as apiUpdateBookingStatus,
+  updateBooking as apiUpdateBooking,
+  listBookingsForUnitDate,
+  markArrived as apiMarkArrived,
+} from '../../lib/api/bookings';
+import {
+  createUnit as apiCreateUnit,
+  deleteUnit as apiDeleteUnit,
+  listUnitsForProperty,
+  toggleUnitStatus as apiToggleUnitStatus,
+  updateUnit as apiUpdateUnit,
+} from '../../lib/api/units';
+import { getProperty } from '../../lib/api/properties';
+import { subscribeToPropertyBookings } from '../../lib/realtime/bookings';
+import { residentFullForUnit, residentSurnameForUnit, toOpsUnit } from '../../lib/mappers/unit';
+import type { UnitWithMembers } from '../../lib/mappers/unit';
+import { toOpsBooking } from '../../lib/mappers/booking';
+import { buildServiceLookup } from '../../lib/mappers/service';
+import type {
+  AttendantRow,
+  BookingRow,
+  PropertyRow,
+  ServiceRow,
+} from '../../lib/types/db';
+import type { BookingStatus, OpsBooking, OpsUnit, UnitKind, UnitRole } from './data';
 
 export interface NewBookingDraft {
-  unit: string;
-  serviceKey: string;
-  date: string; // "14 May"
-  time: string; // "10:30"
+  unit: string; // unit external_id
+  serviceKey: string; // service slug
+  date: string;
+  time: string;
   note?: string;
 }
 
@@ -16,15 +46,22 @@ export type NewUnitInput = Omit<OpsUnit, 'visits' | 'since'> &
 
 export interface OpsContextValue {
   building: string;
+  propertyName: string;
+  propertyId: string | null;
+  loading: boolean;
+  /** True when a super_admin is viewing a property via ?property=uuid override. */
+  viewingAsSuperAdmin: boolean;
 
   bookings: OpsBooking[];
   units: OpsUnit[];
+  services: ServiceRow[];
+  attendants: AttendantRow[];
 
   /** Property admin mutations — manage units / residents / commercial contacts. */
-  createUnit: (input: NewUnitInput) => OpsUnit;
-  updateUnit: (id: string, patch: Partial<OpsUnit>) => void;
-  deleteUnit: (id: string) => void;
-  toggleUnitStatus: (id: string) => void;
+  createUnit: (input: NewUnitInput) => Promise<OpsUnit>;
+  updateUnit: (id: string, patch: Partial<OpsUnit>) => Promise<void>;
+  deleteUnit: (id: string) => Promise<void>;
+  toggleUnitStatus: (id: string) => Promise<void>;
 
   /** Global search query — drives Bookings table, Residences, Command Palette. */
   search: string;
@@ -48,23 +85,70 @@ export interface OpsContextValue {
   closeNewBooking: () => void;
   newBookingPrefill: string | null;
 
-  /** Command palette (⌘K). */
+  /** Command palette. */
   paletteOpen: boolean;
   openPalette: () => void;
   closePalette: () => void;
   togglePalette: () => void;
 
-  /** Status mutation — used by drag-drop on Pipeline + Booking actions. */
-  setBookingStatus: (id: string, status: BookingStatus) => void;
-  cancelBooking: (id: string, reason?: string) => void;
-  createBooking: (draft: NewBookingDraft) => OpsBooking;
+  /** Booking lifecycle. */
+  setBookingStatus: (id: string, status: BookingStatus) => Promise<void>;
+  cancelBooking: (id: string, reason?: string) => Promise<void>;
+  createBooking: (draft: NewBookingDraft) => Promise<OpsBooking>;
+  markArrived: (id: string) => Promise<void>;
+
+  refresh: () => Promise<void>;
 }
 
 const OpsContext = createContext<OpsContextValue | null>(null);
 
+function combineDateTime(dateLabel: string, time: string): Date {
+  // dateLabel like "15 May" or "15 May 2026" — assume current year if missing.
+  const labelWithYear = /\d{4}/.test(dateLabel) ? dateLabel : `${dateLabel} ${new Date().getFullYear()}`;
+  const parsed = new Date(labelWithYear);
+  const base = isNaN(parsed.getTime()) ? new Date() : parsed;
+  const m = /^(\d+):(\d+)\s*(AM|PM)?$/i.exec(time.trim());
+  if (!m) return base;
+  let hour = parseInt(m[1]!, 10);
+  const minute = parseInt(m[2]!, 10);
+  const meridian = m[3]?.toUpperCase();
+  if (meridian === 'PM' && hour < 12) hour += 12;
+  if (meridian === 'AM' && hour === 12) hour = 0;
+  base.setHours(hour, minute, 0, 0);
+  return base;
+}
+
+interface RawState {
+  property: PropertyRow | null;
+  rawUnits: UnitWithMembers[];
+  rawBookings: BookingRow[];
+  services: ServiceRow[];
+  attendants: AttendantRow[];
+  loading: boolean;
+}
+
+const INITIAL: RawState = {
+  property: null,
+  rawUnits: [],
+  rawBookings: [],
+  services: [],
+  attendants: [],
+  loading: true,
+};
+
 export function OpsProvider({ children }: { children: ReactNode }) {
-  const [bookings, setBookings] = useState<OpsBooking[]>(SEED_BOOKINGS);
-  const [units, setUnits] = useState<OpsUnit[]>(SEED_UNITS);
+  const { profile } = useAuth();
+  const [searchParams] = useSearchParams();
+  const overrideProperty = searchParams.get('property');
+  const isSuperAdmin = profile?.role === 'super_admin';
+  // Super admins can scope to any property via ?property=uuid; managers stay
+  // bound to their primary_property_id.
+  const propertyId = isSuperAdmin && overrideProperty
+    ? overrideProperty
+    : profile?.primary_property_id ?? null;
+  const viewingAsSuperAdmin = !!(isSuperAdmin && overrideProperty);
+
+  const [raw, setRaw] = useState<RawState>(INITIAL);
   const [search, setSearch] = useState('');
   const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null);
   const [selectedUnitId, setSelectedUnitId] = useState<string | null>(null);
@@ -72,72 +156,310 @@ export function OpsProvider({ children }: { children: ReactNode }) {
   const [newBookingPrefill, setNewBookingPrefill] = useState<string | null>(null);
   const [paletteOpen, setPaletteOpen] = useState(false);
 
-  const setBookingStatus = useCallback((id: string, status: BookingStatus) => {
-    setBookings((prev) => prev.map((b) => (b.id === id ? { ...b, status } : b)));
-  }, []);
+  const load = useCallback(async () => {
+    if (!propertyId) {
+      setRaw({ ...INITIAL, loading: false });
+      return;
+    }
+    setRaw((prev) => ({ ...prev, loading: true }));
+    try {
+      const [property, rawUnits, rawBookings, services, attendants] = await Promise.all([
+        getProperty(propertyId),
+        listUnitsForProperty(propertyId),
+        listBookingsForProperty(propertyId),
+        listAllServices(propertyId),
+        listAttendantsForProperty(propertyId),
+      ]);
+      setRaw({ property, rawUnits, rawBookings, services, attendants, loading: false });
+    } catch (err) {
+      console.error('[ops] load failed', err);
+      setRaw((prev) => ({ ...prev, loading: false }));
+    }
+  }, [propertyId]);
 
-  const cancelBooking = useCallback((id: string, _reason?: string) => {
-    setBookings((prev) => prev.map((b) => (b.id === id ? { ...b, status: 'cancelled' } : b)));
-  }, []);
+  useEffect(() => {
+    load();
+  }, [load]);
 
-  const createUnit = useCallback((input: NewUnitInput): OpsUnit => {
-    const created: OpsUnit = {
-      visits: 0,
-      since: String(new Date().getFullYear()),
-      ...input,
-    };
-    setUnits((prev) => {
-      if (prev.some((u) => u.id === created.id)) {
-        return prev.map((u) => (u.id === created.id ? created : u));
-      }
-      return [created, ...prev];
+  // Realtime: keep bookings list in sync with other managers / resident actions.
+  useEffect(() => {
+    if (!propertyId) return;
+    const unsub = subscribeToPropertyBookings(propertyId, (payload) => {
+      setRaw((prev) => {
+        const next = [...prev.rawBookings];
+        if (payload.eventType === 'INSERT' && payload.new) {
+          const row = payload.new as BookingRow;
+          if (!next.some((b) => b.id === row.id)) next.unshift(row);
+        } else if (payload.eventType === 'UPDATE' && payload.new) {
+          const row = payload.new as BookingRow;
+          const idx = next.findIndex((b) => b.id === row.id);
+          if (idx >= 0) next[idx] = row;
+          else next.unshift(row);
+        } else if (payload.eventType === 'DELETE' && payload.old) {
+          const removedId = (payload.old as { id?: string }).id;
+          if (removedId) return { ...prev, rawBookings: next.filter((b) => b.id !== removedId) };
+        }
+        return { ...prev, rawBookings: next };
+      });
     });
-    return created;
-  }, []);
+    return unsub;
+  }, [propertyId]);
 
-  const updateUnit = useCallback((id: string, patch: Partial<OpsUnit>) => {
-    setUnits((prev) => prev.map((u) => (u.id === id ? { ...u, ...patch } : u)));
-  }, []);
+  const serviceLookup = useMemo(() => buildServiceLookup(raw.services), [raw.services]);
+  const unitByExternalId = useMemo(() => {
+    const map = new Map<string, UnitWithMembers>();
+    for (const u of raw.rawUnits) map.set(u.row.external_id, u);
+    return map;
+  }, [raw.rawUnits]);
+  const unitByUuid = useMemo(() => {
+    const map = new Map<string, UnitWithMembers>();
+    for (const u of raw.rawUnits) map.set(u.row.id, u);
+    return map;
+  }, [raw.rawUnits]);
+  const attendantByUuid = useMemo(() => {
+    const map = new Map<string, AttendantRow>();
+    for (const a of raw.attendants) map.set(a.id, a);
+    return map;
+  }, [raw.attendants]);
 
-  const deleteUnit = useCallback((id: string) => {
-    setUnits((prev) => prev.filter((u) => u.id !== id));
-    setBookings((prev) => prev.filter((b) => b.unit !== id));
-    setSelectedUnitId((curr) => (curr === id ? null : curr));
-  }, []);
+  const units = useMemo<OpsUnit[]>(() => raw.rawUnits.map(toOpsUnit), [raw.rawUnits]);
 
-  const toggleUnitStatus = useCallback((id: string) => {
-    setUnits((prev) =>
-      prev.map((u) =>
-        u.id === id ? { ...u, status: u.status === 'active' ? 'paused' : 'active' } : u,
-      ),
-    );
-  }, []);
+  const bookings = useMemo<OpsBooking[]>(
+    () =>
+      raw.rawBookings.map((row) => {
+        const unit = unitByUuid.get(row.unit_id);
+        const service = serviceLookup.byUuid.get(row.service_id);
+        const attendant = row.attendant_id ? attendantByUuid.get(row.attendant_id) : null;
+        return toOpsBooking(row, {
+          unitExternalId: unit?.row.external_id ?? '—',
+          residentSurname: unit ? residentSurnameForUnit(unit) : 'Resident',
+          serviceName: service?.name ?? '—',
+          serviceSlug: service?.slug ?? '',
+          attendantName: attendant?.name ?? '—',
+        });
+      }),
+    [raw.rawBookings, unitByUuid, serviceLookup.byUuid, attendantByUuid],
+  );
 
-  const createBooking = useCallback((draft: NewBookingDraft): OpsBooking => {
-    const id = 'B-' + Math.floor(Math.random() * 9000 + 1000).toString();
-    const service = SERVICE_LOOKUP[draft.serviceKey] ?? SERVICE_LOOKUP.window;
-    const created: OpsBooking = {
-      id,
-      date: draft.date,
-      time: draft.time,
-      unit: draft.unit,
-      resident: lookupResidentSurname(draft.unit) ?? 'Resident',
-      service: service.name,
-      serviceKey: draft.serviceKey,
-      attendant: service.attendant,
-      status: 'scheduled',
-      price: service.price,
-      note: draft.note?.trim() || undefined,
-    };
-    setBookings((prev) => [created, ...prev]);
-    return created;
-  }, []);
+  const propertyName = useMemo(() => raw.property?.name ?? '—', [raw.property]);
+  const building = useMemo(() => {
+    if (!raw.property) return '—';
+    return `${raw.property.name} · ${raw.property.unit_count} units`;
+  }, [raw.property]);
+
+  const createUnit = useCallback(
+    async (input: NewUnitInput): Promise<OpsUnit> => {
+      if (!propertyId) throw new Error('No property assigned to this manager.');
+      const created = await apiCreateUnit({
+        property_id: propertyId,
+        external_id: input.id,
+        floor: input.floor,
+        kind: input.kind,
+        status: input.status,
+        notes: input.notes ?? null,
+      });
+      // Re-fetch units to capture any members + denormalised fields.
+      await load();
+      return {
+        id: created.external_id,
+        floor: created.floor,
+        resident: input.residentFull ?? 'Pending',
+        residentFull: input.residentFull ?? 'Pending',
+        status: created.status,
+        visits: 0,
+        since: created.since,
+        kind: created.kind as UnitKind,
+        ...(input.role ? { role: input.role as UnitRole } : {}),
+        ...(input.email ? { email: input.email } : {}),
+        ...(input.phone ? { phone: input.phone } : {}),
+        ...(input.notes ? { notes: input.notes } : {}),
+      };
+    },
+    [propertyId, load],
+  );
+
+  const updateUnit = useCallback(
+    async (id: string, patch: Partial<OpsUnit>) => {
+      const target = unitByExternalId.get(id);
+      if (!target) return;
+      const dbPatch: Record<string, unknown> = {};
+      if (patch.floor !== undefined) dbPatch.floor = patch.floor;
+      if (patch.kind !== undefined) dbPatch.kind = patch.kind;
+      if (patch.status !== undefined) dbPatch.status = patch.status;
+      if (patch.notes !== undefined) dbPatch.notes = patch.notes ?? null;
+      if (Object.keys(dbPatch).length === 0) return;
+      await apiUpdateUnit(target.row.id, dbPatch);
+      await load();
+    },
+    [unitByExternalId, load],
+  );
+
+  const deleteUnit = useCallback(
+    async (id: string) => {
+      const target = unitByExternalId.get(id);
+      if (!target) return;
+      await apiDeleteUnit(target.row.id);
+      setSelectedUnitId((curr) => (curr === id ? null : curr));
+      await load();
+    },
+    [unitByExternalId, load],
+  );
+
+  const toggleUnitStatus = useCallback(
+    async (id: string) => {
+      const target = unitByExternalId.get(id);
+      if (!target) return;
+      await apiToggleUnitStatus(target.row.id, target.row.status);
+      await load();
+    },
+    [unitByExternalId, load],
+  );
+
+  const setBookingStatus = useCallback(
+    async (id: string, status: BookingStatus) => {
+      const prev = raw.rawBookings.find((b) => b.id === id)?.status;
+      // Optimistic
+      setRaw((s) => ({
+        ...s,
+        rawBookings: s.rawBookings.map((b) => (b.id === id ? { ...b, status } : b)),
+      }));
+      try {
+        await apiUpdateBookingStatus(id, status);
+      } catch (err) {
+        // Revert
+        if (prev) {
+          setRaw((s) => ({
+            ...s,
+            rawBookings: s.rawBookings.map((b) => (b.id === id ? { ...b, status: prev } : b)),
+          }));
+        }
+        throw err;
+      }
+    },
+    [raw.rawBookings],
+  );
+
+  const markArrived = useCallback(
+    async (id: string) => {
+      const updated = await apiMarkArrived(id);
+      setRaw((s) => ({
+        ...s,
+        rawBookings: s.rawBookings.map((b) => (b.id === id ? updated : b)),
+      }));
+    },
+    [],
+  );
+
+  const cancelBooking = useCallback(
+    async (id: string, reason?: string) => {
+      const prev = raw.rawBookings.find((b) => b.id === id);
+      setRaw((s) => ({
+        ...s,
+        rawBookings: s.rawBookings.map((b) =>
+          b.id === id ? { ...b, status: 'cancelled', cancelled_reason: reason ?? null } : b,
+        ),
+      }));
+      try {
+        await apiUpdateBooking(id, {
+          status: 'cancelled',
+          cancelled_reason: reason ?? null,
+          cancelled_at: new Date().toISOString(),
+        });
+      } catch (err) {
+        if (prev) {
+          setRaw((s) => ({
+            ...s,
+            rawBookings: s.rawBookings.map((b) => (b.id === id ? prev : b)),
+          }));
+        }
+        throw err;
+      }
+    },
+    [raw.rawBookings],
+  );
+
+  const createBooking = useCallback(
+    async (draft: NewBookingDraft): Promise<OpsBooking> => {
+      if (!profile || !propertyId || !raw.property) throw new Error('No property assigned.');
+      const unit = unitByExternalId.get(draft.unit);
+      if (!unit) throw new Error(`Residence ${draft.unit} not found.`);
+      if (unit.row.status === 'paused') {
+        throw new Error(`Residence ${draft.unit} is paused. Activate it before scheduling.`);
+      }
+      const service = serviceLookup.bySlug.get(draft.serviceKey);
+      if (!service) throw new Error(`Service ${draft.serviceKey} not in catalogue.`);
+      const attendant = raw.attendants[0] ?? null;
+      const scheduledAt = combineDateTime(draft.date, draft.time);
+
+      // Pre-flight availability check — friendly error before hitting the
+      // Postgres unique index on (unit_id, scheduled_at).
+      const sameDay = await listBookingsForUnitDate(unit.row.id, scheduledAt);
+      const taken = sameDay.some((b) => {
+        const t = new Date(b.scheduled_at);
+        return (
+          t.getHours() === scheduledAt.getHours() &&
+          t.getMinutes() === scheduledAt.getMinutes()
+        );
+      });
+      if (taken) {
+        throw new Error(
+          `Slot ${draft.time} on ${draft.date} is already booked for ${draft.unit}.`,
+        );
+      }
+
+      let inserted;
+      try {
+        inserted = await apiCreateBooking({
+          property_id: propertyId,
+          unit_id: unit.row.id,
+          service_id: service.id,
+          attendant_id: attendant?.id ?? null,
+          created_by: profile.id,
+          scheduled_at: scheduledAt.toISOString(),
+          price_cents: service.price_cents,
+          note: draft.note?.trim() || null,
+          service_snapshot: {
+            slug: service.slug,
+            name: service.name,
+            kicker: service.kicker,
+          },
+          resident_snapshot: {
+            full_name: residentFullForUnit(unit),
+            display_name: residentSurnameForUnit(unit),
+            unit: { external_id: unit.row.external_id },
+            ...(attendant ? { attendant: { name: attendant.name } } : {}),
+          },
+        });
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        if (/23505|duplicate key|unique constraint/i.test(msg)) {
+          throw new Error('That slot was just taken — pick another time.');
+        }
+        throw err;
+      }
+      setRaw((s) => ({ ...s, rawBookings: [inserted, ...s.rawBookings] }));
+      return toOpsBooking(inserted, {
+        unitExternalId: unit.row.external_id,
+        residentSurname: residentSurnameForUnit(unit),
+        serviceName: service.name,
+        serviceSlug: service.slug,
+        attendantName: attendant?.name ?? '—',
+      });
+    },
+    [profile, propertyId, raw.property, raw.attendants, unitByExternalId, serviceLookup.bySlug],
+  );
 
   const value = useMemo<OpsContextValue>(
     () => ({
-      building: 'The Arden · 240 units',
+      building,
+      propertyName,
+      propertyId,
+      viewingAsSuperAdmin,
+      loading: raw.loading,
       bookings,
       units,
+      services: raw.services,
+      attendants: raw.attendants,
       search,
       setSearch,
       selectedBookingId,
@@ -178,12 +500,21 @@ export function OpsProvider({ children }: { children: ReactNode }) {
       setBookingStatus,
       cancelBooking,
       createBooking,
+      markArrived,
       createUnit,
       updateUnit,
       deleteUnit,
       toggleUnitStatus,
+      refresh: load,
     }),
     [
+      building,
+      propertyName,
+      propertyId,
+      viewingAsSuperAdmin,
+      raw.loading,
+      raw.services,
+      raw.attendants,
       bookings,
       units,
       search,
@@ -195,10 +526,12 @@ export function OpsProvider({ children }: { children: ReactNode }) {
       setBookingStatus,
       cancelBooking,
       createBooking,
+      markArrived,
       createUnit,
       updateUnit,
       deleteUnit,
       toggleUnitStatus,
+      load,
     ],
   );
 
@@ -209,19 +542,4 @@ export function useOps(): OpsContextValue {
   const ctx = useContext(OpsContext);
   if (!ctx) throw new Error('useOps must be used inside <OpsProvider>');
   return ctx;
-}
-
-// ── helpers ────────────────────────────────────────────────────────────────
-
-import { SEED_UNITS as UNITS_LOOKUP, SERVICES } from './data';
-
-const SERVICE_LOOKUP: Record<string, (typeof SERVICES)[number]> = Object.fromEntries(
-  SERVICES.map((s) => [s.key, s]),
-);
-
-function lookupResidentSurname(unitId: string): string | undefined {
-  const u = UNITS_LOOKUP.find((u) => u.id === unitId);
-  if (!u) return undefined;
-  const surname = u.resident.split(',')[0]?.trim();
-  return surname;
 }
