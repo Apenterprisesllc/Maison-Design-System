@@ -13,7 +13,8 @@ import {
 } from '../../components';
 import { bookingIcsFilename, buildIcs, downloadIcs } from '../../utils/ics';
 import { share } from '../../utils/share';
-import { getGuestBookingById, getPropertyBySlug } from '../../lib/api/guestBookings';
+import { getGuestBookingById } from '../../lib/api/guestBookings';
+import { supabase } from '../../lib/supabase';
 import type { BookingRow } from '../../lib/types/db';
 import type { Resident } from '../Portal/types';
 
@@ -87,23 +88,13 @@ export function GuestConfirmation() {
         }
         setBooking(row);
         // Best-effort property name (the row only has property_id).
-        const { data: prop } = await import('../../lib/supabase').then(({ supabase }) =>
-          supabase
-            .from('properties')
-            .select('slug, name')
-            .eq('id', row.property_id)
-            .maybeSingle(),
-        );
+        const { data: prop } = await supabase
+          .from('properties')
+          .select('slug, name')
+          .eq('id', row.property_id)
+          .maybeSingle();
         if (!cancelled && prop) {
           setPropertyName(prop.name);
-          // Hydrate slug for share link
-          if (prop.slug) {
-            // no-op, slug accessed when needed
-          }
-        }
-        // Verify the property is still reachable (active flag)
-        if (!cancelled && prop?.slug) {
-          await getPropertyBySlug(prop.slug);
         }
       } catch (err) {
         if (!cancelled) setError(err instanceof Error ? err.message : 'Could not load booking.');
