@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Button, Drawer, Hairline, useRetained, useToast } from '../../components';
+import { useAuth } from '../../lib/auth';
 import { useOps } from './context';
 import { STATUS_LABEL, STATUS_TONE, type BookingStatus } from './data';
 import { OpsPill } from './OpsPrimitives';
@@ -8,8 +9,13 @@ import { BookingMessages } from './BookingMessages';
 import { listStatusEventsForBooking } from '../../lib/api/bookings';
 import type { BookingStatusEventRow } from '../../lib/types/db';
 
+// "confirmed" requires picking an assignee (handled in Pipeline.tsx via the
+// ConfirmAssigneeModal). From the drawer we let the manager skip ahead — a
+// scheduled booking jumps straight to enroute if the manager is dispatching
+// without going through the confirm step.
 const NEXT_STATUS: Record<BookingStatus, BookingStatus | null> = {
   scheduled: 'enroute',
+  confirmed: 'enroute',
   enroute: 'active',
   active: 'closed',
   closed: null,
@@ -18,6 +24,7 @@ const NEXT_STATUS: Record<BookingStatus, BookingStatus | null> = {
 
 const NEXT_LABEL: Record<BookingStatus, string> = {
   scheduled: 'Mark En Route',
+  confirmed: 'Mark En Route',
   enroute: 'Mark In Progress',
   active: 'Mark Closed',
   closed: 'Closed',
@@ -26,9 +33,13 @@ const NEXT_LABEL: Record<BookingStatus, string> = {
 
 export function BookingDetailDrawer() {
   const toast = useToast();
+  const { profile } = useAuth();
   const { selectedBooking, closeBooking, setBookingStatus, cancelBooking, markArrived } = useOps();
   const open = !!selectedBooking;
   const renderBooking = useRetained(selectedBooking, 320);
+  // Only AP can mutate bookings. Managers see the drawer for context but
+  // without any action buttons.
+  const canMutate = profile?.role === 'super_admin';
 
   const [events, setEvents] = useState<BookingStatusEventRow[]>([]);
   useEffect(() => {
@@ -101,7 +112,7 @@ export function BookingDetailDrawer() {
           : undefined
       }
       footer={
-        renderBooking && (
+        renderBooking && canMutate && (
           <>
             {showMarkArrived && (
               <Button variant="quiet" onClick={onMarkArrived} icon="map-pin-check">

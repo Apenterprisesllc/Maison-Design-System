@@ -206,6 +206,11 @@ export const TEST_BOOKING: BookingRow = {
   cancelled_reason: null,
   cancelled_at: null,
   arrived_at: null,
+  assignee_name: null,
+  is_guest: false,
+  guest_name: null,
+  guest_phone: null,
+  guest_address: null,
   created_at: '2026-05-01T00:00:00Z',
   updated_at: '2026-05-01T00:00:00Z',
 };

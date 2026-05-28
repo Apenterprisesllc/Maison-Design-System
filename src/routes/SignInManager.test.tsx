@@ -12,15 +12,15 @@ async function fillAndSubmit(email: string, password: string) {
 }
 
 describe('SignInManager', () => {
-  it('rejects a resident account and offers a shortcut to the resident sign-in', async () => {
+  it('rejects a resident account and offers a shortcut to the booking flow', async () => {
     await signOutForTest();
     renderWithProviders(<SignInManager />, { route: '/sign-in/manager' });
     await fillAndSubmit('resident@thearden.test', 'ResidentPass2026!');
     expect(
-      await screen.findByText(/reserved for property managers/i),
+      await screen.findByText(/residents schedule services without signing in/i),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('button', { name: /go to resident sign-in/i }),
+      screen.getByRole('button', { name: /schedule a service/i }),
     ).toBeInTheDocument();
   });
 

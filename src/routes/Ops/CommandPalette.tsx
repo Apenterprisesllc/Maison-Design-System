@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Eyebrow, Icon, useLucide } from '../../components';
+import { useAuth } from '../../lib/auth';
 import { useOps } from './context';
 
 interface CommandItem {
@@ -20,6 +21,13 @@ const KEY_HINT = navigator.userAgent.toUpperCase().includes('MAC') ? '⌘ K' : '
 
 export function CommandPalette() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { profile } = useAuth();
+  // Preserve ?property=<id> impersonation context when the super admin jumps
+  // between sections via the palette.
+  const search = location.search;
+  const inAdmin = location.pathname.startsWith('/admin');
+  const canCreateBookings = profile?.role === 'super_admin' && inAdmin;
   const {
     paletteOpen,
     closePalette,
@@ -45,9 +53,10 @@ export function CommandPalette() {
   const items = useMemo<CommandItem[]>(() => {
     const list: CommandItem[] = [];
 
-    // Quick actions
-    list.push(
-      {
+    // Quick actions — only super-admin in /admin/* can create bookings
+    // (the New Booking modal is mounted by AdminOpsScope, not OpsLayout).
+    if (canCreateBookings) {
+      list.push({
         id: 'new-booking',
         label: 'Schedule a new visit',
         hint: 'Open the New Booking wizard',
@@ -58,56 +67,39 @@ export function CommandPalette() {
           closePalette();
           openNewBooking();
         },
-      },
-      {
-        id: 'go-pipeline',
-        label: 'Go to Pipeline',
-        hint: 'Today\'s board',
-        icon: 'kanban-square',
+      });
+    }
+
+    // Navigate — destinations depend on the user's chrome (admin vs manager).
+    const navTargets = inAdmin
+      ? [
+          { id: 'go-console',    label: 'Go to Console',    hint: 'Weekly snapshot',         icon: 'layout-dashboard',      path: '/admin',            match: 'console home dashboard overview' },
+          { id: 'go-pipeline',   label: 'Go to Pipeline',   hint: "Today's board",           icon: 'kanban-square',         path: '/admin/pipeline',   match: 'pipeline board today kanban' },
+          { id: 'go-bookings',   label: 'Go to Bookings',   hint: 'All bookings, filterable',icon: 'calendar-check',        path: '/admin/bookings',   match: 'bookings table list' },
+          { id: 'go-properties', label: 'Go to Properties', hint: 'Units and residents',     icon: 'building-2',            path: '/admin/properties', match: 'properties residences units residents' },
+          { id: 'go-managers',   label: 'Managers',         hint: 'Stewardship roster',      icon: 'users',                 path: '/admin/managers',   match: 'managers stewards people roster' },
+          { id: 'go-referrals',  label: 'Go to Referrals',  hint: 'Leads from managers',     icon: 'send',                  path: '/admin/referrals',  match: 'referrals leads commissions' },
+          { id: 'go-reports',    label: 'Go to Reports',    hint: 'KPIs and on-time arrivals', icon: 'chart-no-axes-column', path: '/admin/reports',    match: 'reports analytics charts kpis' },
+        ]
+      : [
+          { id: 'go-bookings',   label: 'Go to Bookings',   hint: "Your building's activity", icon: 'calendar-check', path: '/ops',           match: 'bookings activity feed' },
+          { id: 'go-referrals',  label: 'Go to Referrals',  hint: 'Send a lead to AP',        icon: 'send',           path: '/ops/referrals', match: 'referrals lead send' },
+        ];
+
+    for (const t of navTargets) {
+      list.push({
+        id: t.id,
+        label: t.label,
+        hint: t.hint,
+        icon: t.icon,
         group: 'navigate',
-        match: 'pipeline board today',
+        match: t.match,
         run: () => {
           closePalette();
-          navigate('/ops');
+          navigate(`${t.path}${search}`);
         },
-      },
-      {
-        id: 'go-bookings',
-        label: 'Go to Bookings',
-        hint: 'All bookings, filterable',
-        icon: 'calendar-check',
-        group: 'navigate',
-        match: 'bookings table list',
-        run: () => {
-          closePalette();
-          navigate('/ops/bookings');
-        },
-      },
-      {
-        id: 'go-residences',
-        label: 'Go to Residences',
-        hint: 'Units and residents',
-        icon: 'building-2',
-        group: 'navigate',
-        match: 'residences units residents',
-        run: () => {
-          closePalette();
-          navigate('/ops/residences');
-        },
-      },
-      {
-        id: 'go-reports',
-        label: 'Go to Reports',
-        hint: 'Quarterly visit volume + KPIs',
-        icon: 'chart-no-axes-column',
-        group: 'navigate',
-        match: 'reports analytics charts',
-        run: () => {
-          closePalette();
-          navigate('/ops/reports');
-        },
-      },
-    );
+      });
+    }
 
     // Bookings
     bookings.forEach((b) => {
@@ -142,7 +134,7 @@ export function CommandPalette() {
     });
 
     return list;
-  }, [bookings, units, navigate, closePalette, openBooking, openUnit, openNewBooking]);
+  }, [bookings, units, navigate, search, closePalette, openBooking, openUnit, openNewBooking, inAdmin, canCreateBookings]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();

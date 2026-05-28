@@ -13,14 +13,14 @@ export function FirstLoginGate() {
   useLucide();
 
   if (status === 'loading') return null;
-  if (status === 'anonymous' || !profile) return <Navigate to="/sign-in/resident" replace />;
+  if (status === 'anonymous' || !profile) return <Navigate to="/sign-in/manager" replace />;
   if (!profile.must_change_password) {
     const home =
       profile.role === 'super_admin'
         ? '/admin'
         : profile.role === 'property_manager'
           ? '/ops'
-          : '/portal';
+          : '/book';
     return <Navigate to={home} replace />;
   }
 
@@ -48,7 +48,7 @@ export function FirstLoginGate() {
         ? '/admin'
         : role === 'property_manager'
           ? '/ops'
-          : '/portal';
+          : '/book';
     navigate(home, { replace: true });
   }
 

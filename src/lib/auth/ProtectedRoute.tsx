@@ -9,18 +9,21 @@ export interface ProtectedRouteProps {
   children: ReactNode;
 }
 
+// Residents and attendants no longer have authenticated portals — the public
+// /book flow is their entry point. Sending them there preserves the previous
+// "you don't belong here" UX without dead intermediary routes.
 const ROLE_HOME: Record<UserRole, string> = {
   super_admin: '/admin',
   property_manager: '/ops',
-  resident: '/portal',
-  attendant: '/portal',
+  resident: '/book',
+  attendant: '/book',
 };
 
 const ROLE_SIGN_IN: Record<UserRole, string> = {
   super_admin: '/sign-in/manager',
   property_manager: '/sign-in/manager',
-  resident: '/sign-in/resident',
-  attendant: '/sign-in/resident',
+  resident: '/book',
+  attendant: '/book',
 };
 
 export function ProtectedRoute({ role, children }: ProtectedRouteProps) {

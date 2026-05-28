@@ -5,6 +5,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { DrawSVGPlugin } from 'gsap/DrawSVGPlugin';
 import { App } from './App';
 import { AuthProvider } from './lib/auth';
+import { ToastProvider } from './components';
 import './styles/index.css';
 
 gsap.registerPlugin(ScrollTrigger, DrawSVGPlugin);
@@ -30,7 +31,9 @@ void enableMockingIfNeeded().then(() => {
   createRoot(root).render(
     <StrictMode>
       <AuthProvider>
-        <App />
+        <ToastProvider>
+          <App />
+        </ToastProvider>
       </AuthProvider>
     </StrictMode>,
   );

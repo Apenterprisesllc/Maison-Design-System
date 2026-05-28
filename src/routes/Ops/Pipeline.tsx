@@ -9,7 +9,7 @@ import {
   useSensors,
 } from '@dnd-kit/core';
 import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
-import { useReveal, useToast } from '../../components';
+import { Modal, useReveal, useToast } from '../../components';
 import { CountUp } from '../../components';
 import { buildCsv, downloadCsv } from '../../utils/csv';
 import { useOps } from './context';
@@ -35,16 +35,31 @@ interface Col {
 
 const COLS: Col[] = [
   { id: 'scheduled', label: 'Scheduled' },
+  { id: 'confirmed', label: 'Confirmed' },
   { id: 'enroute', label: 'En Route' },
   { id: 'active', label: 'In Progress' },
   { id: 'closed', label: 'Closed Today' },
 ];
 
-const ALL_STATUSES: BookingStatus[] = ['scheduled', 'enroute', 'active', 'closed', 'cancelled'];
+const ALL_STATUSES: BookingStatus[] = [
+  'scheduled',
+  'confirmed',
+  'enroute',
+  'active',
+  'closed',
+  'cancelled',
+];
 
 export function Pipeline() {
   const toast = useToast();
-  const { bookings, openBooking, openNewBooking, setBookingStatus, propertyName } = useOps();
+  const {
+    bookings,
+    openBooking,
+    openNewBooking,
+    setBookingStatus,
+    confirmBookingWithAssignee,
+    propertyName,
+  } = useOps();
   const ref = useReveal<HTMLDivElement>({ y: 16, stagger: 0.04, rootMargin: '0px 0px -2% 0px' });
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
   const [draggingId, setDraggingId] = useState<string | null>(null);
@@ -52,6 +67,7 @@ export function Pipeline() {
   const [statusFilter, setStatusFilter] = useState<Set<BookingStatus>>(new Set(ALL_STATUSES));
   const [attendantFilter, setAttendantFilter] = useState<string>('');
   const filtersAnchor = useRef<HTMLDivElement>(null);
+  const [confirmTarget, setConfirmTarget] = useState<OpsBooking | null>(null);
 
   const todayLabel = useMemo(
     () =>
@@ -81,6 +97,7 @@ export function Pipeline() {
   const grouped = useMemo(() => {
     const map: Record<BookingStatus, OpsBooking[]> = {
       scheduled: [],
+      confirmed: [],
       enroute: [],
       active: [],
       closed: [],
@@ -94,7 +111,21 @@ export function Pipeline() {
 
   const visitsToday = filtered.filter((b) => b.status !== 'cancelled').length;
   const onSite = grouped.active.length;
-  const awaitingAccess = filtered.filter((b) => b.note?.toLowerCase().includes('awaiting')).length;
+  const awaitingBookings = filtered.filter((b) => b.note?.toLowerCase().includes('awaiting'));
+  const awaitingAccess = awaitingBookings.length;
+  const awaitingDelta =
+    awaitingAccess === 0
+      ? 'None'
+      : awaitingAccess === 1
+        ? `Residence ${awaitingBookings[0]!.unit}`
+        : `${awaitingAccess} residences`;
+  const pendingConfirm = grouped.scheduled.length;
+  const visitsDelta =
+    pendingConfirm === 0
+      ? 'All confirmed'
+      : `${pendingConfirm} pending confirmation`;
+  const totalToday = filtered.length;
+  const onSiteDelta = totalToday === 0 ? 'No visits scheduled' : `of ${totalToday} today`;
   const arrivedBookings = filtered.filter((b) => b.arrivedAt);
   const onTimeBookings = arrivedBookings.filter((b) => {
     if (!b.arrivedAt) return false;
@@ -151,11 +182,30 @@ export function Pipeline() {
     const newStatus = e.over.id as BookingStatus;
     const booking = bookings.find((b) => b.id === id);
     if (!booking || booking.status === newStatus) return;
+    // Confirmed needs an assignee; route through the modal instead of writing
+    // directly to the DB.
+    if (newStatus === 'confirmed') {
+      setConfirmTarget(booking);
+      return;
+    }
     try {
       await setBookingStatus(id, newStatus);
       toast.success(`${booking.reference} → ${STATUS_LABEL[newStatus]}.`);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Could not update. Reverted.';
+      toast.error(message);
+    }
+  }
+
+  async function handleConfirmSubmit(name: string) {
+    if (!confirmTarget) return;
+    const target = confirmTarget;
+    setConfirmTarget(null);
+    try {
+      await confirmBookingWithAssignee(target.id, name);
+      toast.success(`${target.reference} confirmed — ${name}.`);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Could not confirm. Try again.';
       toast.error(message);
     }
   }
@@ -327,19 +377,19 @@ export function Pipeline() {
         <Kpi
           label="Visits Today"
           value={<CountUp to={visitsToday} duration={1.4} />}
-          delta="+2 vs avg"
-          deltaTone="success"
+          delta={visitsDelta}
+          deltaTone={pendingConfirm === 0 ? 'success' : 'warning'}
         />
         <Kpi
           label="Attendants On Site"
           value={<CountUp to={onSite} duration={1.2} />}
-          delta="of 6 scheduled"
+          delta={onSiteDelta}
           deltaTone="neutral"
         />
         <Kpi
           label="Awaiting Access"
           value={<CountUp to={awaitingAccess} duration={1.0} />}
-          delta={awaitingAccess > 0 ? 'PH-02' : 'None'}
+          delta={awaitingDelta}
           deltaTone={awaitingAccess > 0 ? 'warning' : 'success'}
         />
         <Kpi
@@ -359,7 +409,7 @@ export function Pipeline() {
       <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd}>
         <div
           className="pipeline-cols"
-          style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}
+          style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 16 }}
         >
           {COLS.map((col) => {
             const items = grouped[col.id];
@@ -379,7 +429,16 @@ export function Pipeline() {
         </DragOverlay>
       </DndContext>
 
+      <ConfirmAssigneeModal
+        target={confirmTarget}
+        onCancel={() => setConfirmTarget(null)}
+        onSubmit={handleConfirmSubmit}
+      />
+
       <style>{`
+        @media (max-width: 1279px) {
+          .pipeline-cols { grid-template-columns: repeat(3, 1fr) !important; }
+        }
         @media (max-width: 1023px) {
           .pipeline-kpis { grid-template-columns: repeat(2, 1fr) !important; }
           .pipeline-cols { grid-template-columns: repeat(2, 1fr) !important; }
@@ -586,6 +645,26 @@ function PipelineCardVisual({
       >
         {item.resident} · {item.attendant}
       </div>
+      {item.assignee && (
+        <div
+          style={{
+            marginTop: 6,
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6,
+            fontFamily: 'Inter, sans-serif',
+            fontSize: 11,
+            color: 'var(--color-champagne-deep)',
+            background: 'rgba(196,151,62,0.10)',
+            border: '1px solid rgba(196,151,62,0.35)',
+            borderRadius: 999,
+            padding: '2px 10px',
+            letterSpacing: '0.02em',
+          }}
+        >
+          <OpsIcon name="user-check" size={11} /> {item.assignee}
+        </div>
+      )}
       {item.note && (
         <div
           style={{
@@ -609,5 +688,133 @@ function PipelineCardVisual({
         </div>
       )}
     </article>
+  );
+}
+
+// ─── Confirm assignee modal ────────────────────────────────────────────────
+
+function ConfirmAssigneeModal({
+  target,
+  onCancel,
+  onSubmit,
+}: {
+  target: OpsBooking | null;
+  onCancel: () => void;
+  onSubmit: (assigneeName: string) => void | Promise<void>;
+}) {
+  const [name, setName] = useState(target?.assignee ?? '');
+  const [touched, setTouched] = useState(false);
+
+  // Reset the input each time a new card opens the modal.
+  const lastTargetId = useRef<string | null>(null);
+  if (target && target.id !== lastTargetId.current) {
+    lastTargetId.current = target.id;
+    if (name !== (target.assignee ?? '')) setName(target.assignee ?? '');
+    if (touched) setTouched(false);
+  }
+  if (!target && lastTargetId.current !== null) {
+    lastTargetId.current = null;
+  }
+
+  const trimmed = name.trim();
+  const valid = trimmed.length >= 2;
+
+  function handleConfirm() {
+    setTouched(true);
+    if (!valid) return;
+    onSubmit(trimmed);
+  }
+
+  return (
+    <Modal
+      open={target !== null}
+      onClose={onCancel}
+      eyebrow="Confirm Visit"
+      title="Who will perform this service?"
+      width={460}
+      footer={
+        <>
+          <OpsButton variant="ghost" onClick={onCancel}>
+            Cancel
+          </OpsButton>
+          <OpsButton variant="primary" icon="check" onClick={handleConfirm} disabled={!valid}>
+            Confirm
+          </OpsButton>
+        </>
+      }
+    >
+      {target && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <p
+            style={{
+              fontFamily: 'var(--font-sans)',
+              fontSize: 13,
+              color: 'var(--color-mist)',
+              lineHeight: 1.6,
+              margin: 0,
+            }}
+          >
+            <strong style={{ color: 'var(--color-charcoal)' }}>{target.reference}</strong> ·{' '}
+            {target.service} · {target.time} · {target.unit}
+          </p>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <label
+              htmlFor="confirm-assignee"
+              style={{
+                fontFamily: 'var(--font-sans)',
+                fontSize: 11,
+                letterSpacing: '0.16em',
+                textTransform: 'uppercase',
+                color: 'var(--color-mist)',
+              }}
+            >
+              Assignee
+            </label>
+            <input
+              id="confirm-assignee"
+              autoFocus
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  handleConfirm();
+                }
+              }}
+              placeholder="e.g. Jorge"
+              autoComplete="off"
+              style={{
+                fontFamily: 'var(--font-serif)',
+                fontSize: 18,
+                color: 'var(--color-charcoal)',
+                background: 'transparent',
+                border: 'none',
+                borderBottom: `1px solid ${
+                  touched && !valid ? 'var(--color-status-danger)' : 'var(--color-taupe)'
+                }`,
+                outline: 'none',
+                padding: '8px 0',
+              }}
+            />
+            <span
+              style={{
+                fontFamily: 'var(--font-sans)',
+                fontSize: 11,
+                color:
+                  touched && !valid
+                    ? 'var(--color-status-danger)'
+                    : 'var(--color-mist-soft)',
+                minHeight: 14,
+              }}
+            >
+              {touched && !valid
+                ? 'Type a name with at least two characters.'
+                : 'Recorded on the booking and visible to the attendant.'}
+            </span>
+          </div>
+        </div>
+      )}
+    </Modal>
   );
 }

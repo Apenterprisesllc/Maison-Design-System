@@ -1,1 +1,1 @@
-export type OpsView = 'pipeline' | 'bookings' | 'residences' | 'residents' | 'reports';
+export type OpsView = 'bookings' | 'referrals';

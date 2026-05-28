@@ -105,13 +105,18 @@ export async function markArrived(id: string, at: Date = new Date()): Promise<Bo
   const patch: { arrived_at: string; status?: BookingStatus } = {
     arrived_at: at.toISOString(),
   };
-  // If still in scheduled/enroute, promote to active.
+  // If still in scheduled/confirmed/enroute, promote to active on arrival.
   const { data: existing } = await supabase
     .from('bookings')
     .select('status')
     .eq('id', id)
     .single();
-  if (existing && (existing.status === 'scheduled' || existing.status === 'enroute')) {
+  if (
+    existing &&
+    (existing.status === 'scheduled' ||
+      existing.status === 'confirmed' ||
+      existing.status === 'enroute')
+  ) {
     patch.status = 'active';
   }
   const { data, error } = await supabase
@@ -159,6 +164,22 @@ export async function createBooking(params: CreateBookingParams): Promise<Bookin
 
 export async function updateBookingStatus(id: string, status: BookingStatus): Promise<void> {
   const { error } = await supabase.from('bookings').update({ status }).eq('id', id);
+  if (error) throw error;
+}
+
+/**
+ * Promote a booking to "confirmed" and record the assignee in one round-trip.
+ * Used by the Pipeline confirm modal when the manager drags a card onto the
+ * Confirmed column.
+ */
+export async function confirmBookingWithAssignee(
+  id: string,
+  assigneeName: string,
+): Promise<void> {
+  const { error } = await supabase
+    .from('bookings')
+    .update({ status: 'confirmed', assignee_name: assigneeName })
+    .eq('id', id);
   if (error) throw error;
 }
 

@@ -1,7 +1,9 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Icon, useLucide, useToast } from '../../components';
 import { buildCsv, downloadCsv } from '../../utils/csv';
+import { businessDateKey } from '../../utils/dateKey';
 import { useOps } from './context';
 import { STATUS_LABEL, STATUS_TONE, type BookingStatus, type OpsBooking } from './data';
 import {
@@ -36,18 +38,51 @@ export function BookingsTable() {
   const toast = useToast();
   const { bookings, search, setSearch, openBooking, openNewBooking, openPalette, propertyName } = useOps();
   const [filter, setFilter] = useState<FilterKey>('all');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const handledRefParam = useRef<string | null>(null);
+  const dateParam = searchParams.get('date');
+
+  // Deep-link support: when a parent navigates with `?ref=BK-XXXX` (the new
+  // bookings feed on the Console does this), open that booking's drawer once
+  // the bookings list has loaded, then strip the param so refreshing the page
+  // doesn't keep re-opening it.
+  useEffect(() => {
+    const refParam = searchParams.get('ref');
+    if (!refParam) return;
+    if (handledRefParam.current === refParam) return;
+    if (bookings.length === 0) return;
+    const match = bookings.find((b) => b.reference === refParam);
+    if (!match) return;
+    handledRefParam.current = refParam;
+    openBooking(match.id);
+    const next = new URLSearchParams(searchParams);
+    next.delete('ref');
+    setSearchParams(next, { replace: true });
+  }, [bookings, searchParams, setSearchParams, openBooking]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return bookings.filter((b) => {
       if (filter !== 'all' && b.status !== filter) return false;
+      if (dateParam) {
+        // Compare against the business-timezone day so that bookings late in
+        // the local evening (which fall on the next UTC day) match the chip
+        // shown to the user and the RPC bucket on the /admin calendar.
+        if (businessDateKey(b.scheduledAt) !== dateParam) return false;
+      }
       if (!q) return true;
       return [b.reference, b.unit, b.resident, b.service, b.attendant]
         .join(' ')
         .toLowerCase()
         .includes(q);
     });
-  }, [bookings, search, filter]);
+  }, [bookings, search, filter, dateParam]);
+
+  function clearDateFilter() {
+    const next = new URLSearchParams(searchParams);
+    next.delete('date');
+    setSearchParams(next, { replace: true });
+  }
 
   function exportCsv() {
     const csv = buildCsv<OpsBooking>(filtered, [
@@ -183,6 +218,38 @@ export function BookingsTable() {
           );
         })}
       </div>
+
+      {/* Active filter chips */}
+      {dateParam && (
+        <div style={{ display: 'flex', gap: 8, marginBottom: 14, flexWrap: 'wrap' }}>
+          <button
+            type="button"
+            onClick={clearDateFilter}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 8,
+              padding: '5px 10px',
+              background: 'rgba(196,151,62,0.10)',
+              border: '1px solid var(--color-champagne)',
+              borderRadius: 999,
+              fontFamily: 'Inter, sans-serif',
+              fontSize: 12,
+              color: 'var(--color-champagne-deep)',
+              cursor: 'pointer',
+            }}
+            title="Clear date filter"
+          >
+            <Icon name="calendar" size={12} />
+            {new Date(`${dateParam}T00:00:00`).toLocaleDateString('en-US', {
+              weekday: 'short',
+              month: 'short',
+              day: 'numeric',
+            })}
+            <Icon name="x" size={12} />
+          </button>
+        </div>
+      )}
 
       {/* Table */}
       <OpsCard padding={0} style={{ overflow: 'hidden' }}>

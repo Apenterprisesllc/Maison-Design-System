@@ -9,6 +9,7 @@ import {
   createBooking as apiCreateBooking,
   updateBookingStatus as apiUpdateBookingStatus,
   updateBooking as apiUpdateBooking,
+  confirmBookingWithAssignee as apiConfirmBookingWithAssignee,
   listBookingsForUnitDate,
   markArrived as apiMarkArrived,
 } from '../../lib/api/bookings';
@@ -25,10 +26,16 @@ import { residentFullForUnit, residentSurnameForUnit, toOpsUnit } from '../../li
 import type { UnitWithMembers } from '../../lib/mappers/unit';
 import { toOpsBooking } from '../../lib/mappers/booking';
 import { buildServiceLookup } from '../../lib/mappers/service';
+import {
+  createReferral as apiCreateReferral,
+  listAllReferrals,
+  listMyReferrals,
+} from '../../lib/api/referrals';
 import type {
   AttendantRow,
   BookingRow,
   PropertyRow,
+  ReferralRow,
   ServiceRow,
 } from '../../lib/types/db';
 import type { BookingStatus, OpsBooking, OpsUnit, UnitKind, UnitRole } from './data';
@@ -93,9 +100,21 @@ export interface OpsContextValue {
 
   /** Booking lifecycle. */
   setBookingStatus: (id: string, status: BookingStatus) => Promise<void>;
+  confirmBookingWithAssignee: (id: string, assigneeName: string) => Promise<void>;
   cancelBooking: (id: string, reason?: string) => Promise<void>;
   createBooking: (draft: NewBookingDraft) => Promise<OpsBooking>;
   markArrived: (id: string) => Promise<void>;
+
+  /** Referrals — managers create them, super admins manage the queue. */
+  referrals: ReferralRow[];
+  createReferral: (input: {
+    referred_name: string;
+    referred_phone: string;
+    unit_id?: string | null;
+    suggested_service_id?: string | null;
+    note?: string | null;
+  }) => Promise<ReferralRow>;
+  refreshReferrals: () => Promise<void>;
 
   refresh: () => Promise<void>;
 }
@@ -155,6 +174,7 @@ export function OpsProvider({ children }: { children: ReactNode }) {
   const [newBookingOpen, setNewBookingOpen] = useState(false);
   const [newBookingPrefill, setNewBookingPrefill] = useState<string | null>(null);
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [referrals, setReferrals] = useState<ReferralRow[]>([]);
 
   const load = useCallback(async () => {
     if (!propertyId) {
@@ -180,6 +200,58 @@ export function OpsProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     load();
   }, [load]);
+
+  // Referrals: managers see their own; super admins see all (RLS handles it).
+  const refreshReferrals = useCallback(async () => {
+    if (!profile) {
+      setReferrals([]);
+      return;
+    }
+    try {
+      const rows = isSuperAdmin
+        ? await listAllReferrals()
+        : await listMyReferrals(profile.id);
+      setReferrals(rows);
+    } catch (err) {
+      console.error('[ops] referrals load failed', err);
+      setReferrals([]);
+    }
+  }, [profile, isSuperAdmin]);
+
+  useEffect(() => {
+    refreshReferrals();
+  }, [refreshReferrals]);
+
+  const createReferral = useCallback(
+    async (input: {
+      referred_name: string;
+      referred_phone: string;
+      unit_id?: string | null;
+      suggested_service_id?: string | null;
+      note?: string | null;
+    }) => {
+      if (!profile) throw new Error('Not signed in.');
+      if (!propertyId) throw new Error('No property in context.');
+      const row = await apiCreateReferral({
+        property_id: propertyId,
+        referrer_id: profile.id,
+        referred_name: input.referred_name,
+        referred_phone: input.referred_phone,
+        unit_id: input.unit_id ?? null,
+        suggested_service_id: input.suggested_service_id ?? null,
+        note: input.note ?? null,
+      });
+      setReferrals((prev) => [row, ...prev]);
+      return row;
+    },
+    [profile, propertyId],
+  );
+
+  // Defense-in-depth: managers shouldn't reach the mutating code paths (the
+  // UI doesn't expose them), but if they do, fail fast with a friendly error
+  // instead of letting Supabase return an opaque RLS error.
+  const onlyAdminError = (action: string) =>
+    new Error(`Only AP can ${action}. Contact your account manager.`);
 
   // Realtime: keep bookings list in sync with other managers / resident actions.
   useEffect(() => {
@@ -249,6 +321,7 @@ export function OpsProvider({ children }: { children: ReactNode }) {
 
   const createUnit = useCallback(
     async (input: NewUnitInput): Promise<OpsUnit> => {
+      if (!isSuperAdmin) throw onlyAdminError('add units');
       if (!propertyId) throw new Error('No property assigned to this manager.');
       const created = await apiCreateUnit({
         property_id: propertyId,
@@ -275,11 +348,12 @@ export function OpsProvider({ children }: { children: ReactNode }) {
         ...(input.notes ? { notes: input.notes } : {}),
       };
     },
-    [propertyId, load],
+    [propertyId, load, isSuperAdmin],
   );
 
   const updateUnit = useCallback(
     async (id: string, patch: Partial<OpsUnit>) => {
+      if (!isSuperAdmin) throw onlyAdminError('edit units');
       const target = unitByExternalId.get(id);
       if (!target) return;
       const dbPatch: Record<string, unknown> = {};
@@ -291,32 +365,35 @@ export function OpsProvider({ children }: { children: ReactNode }) {
       await apiUpdateUnit(target.row.id, dbPatch);
       await load();
     },
-    [unitByExternalId, load],
+    [unitByExternalId, load, isSuperAdmin],
   );
 
   const deleteUnit = useCallback(
     async (id: string) => {
+      if (!isSuperAdmin) throw onlyAdminError('delete units');
       const target = unitByExternalId.get(id);
       if (!target) return;
       await apiDeleteUnit(target.row.id);
       setSelectedUnitId((curr) => (curr === id ? null : curr));
       await load();
     },
-    [unitByExternalId, load],
+    [unitByExternalId, load, isSuperAdmin],
   );
 
   const toggleUnitStatus = useCallback(
     async (id: string) => {
+      if (!isSuperAdmin) throw onlyAdminError('change unit status');
       const target = unitByExternalId.get(id);
       if (!target) return;
       await apiToggleUnitStatus(target.row.id, target.row.status);
       await load();
     },
-    [unitByExternalId, load],
+    [unitByExternalId, load, isSuperAdmin],
   );
 
   const setBookingStatus = useCallback(
     async (id: string, status: BookingStatus) => {
+      if (!isSuperAdmin) throw onlyAdminError('change booking status');
       const prev = raw.rawBookings.find((b) => b.id === id)?.status;
       // Optimistic
       setRaw((s) => ({
@@ -336,22 +413,55 @@ export function OpsProvider({ children }: { children: ReactNode }) {
         throw err;
       }
     },
-    [raw.rawBookings],
+    [raw.rawBookings, isSuperAdmin],
+  );
+
+  const confirmBookingWithAssignee = useCallback(
+    async (id: string, assigneeName: string) => {
+      if (!isSuperAdmin) throw onlyAdminError('confirm bookings');
+      const before = raw.rawBookings.find((b) => b.id === id);
+      const prevStatus = before?.status;
+      const prevAssignee = before?.assignee_name ?? null;
+      // Optimistic
+      setRaw((s) => ({
+        ...s,
+        rawBookings: s.rawBookings.map((b) =>
+          b.id === id ? { ...b, status: 'confirmed', assignee_name: assigneeName } : b,
+        ),
+      }));
+      try {
+        await apiConfirmBookingWithAssignee(id, assigneeName);
+      } catch (err) {
+        // Revert both fields together
+        setRaw((s) => ({
+          ...s,
+          rawBookings: s.rawBookings.map((b) =>
+            b.id === id && prevStatus
+              ? { ...b, status: prevStatus, assignee_name: prevAssignee }
+              : b,
+          ),
+        }));
+        throw err;
+      }
+    },
+    [raw.rawBookings, isSuperAdmin],
   );
 
   const markArrived = useCallback(
     async (id: string) => {
+      if (!isSuperAdmin) throw onlyAdminError('mark arrivals');
       const updated = await apiMarkArrived(id);
       setRaw((s) => ({
         ...s,
         rawBookings: s.rawBookings.map((b) => (b.id === id ? updated : b)),
       }));
     },
-    [],
+    [isSuperAdmin],
   );
 
   const cancelBooking = useCallback(
     async (id: string, reason?: string) => {
+      if (!isSuperAdmin) throw onlyAdminError('cancel bookings');
       const prev = raw.rawBookings.find((b) => b.id === id);
       setRaw((s) => ({
         ...s,
@@ -375,11 +485,12 @@ export function OpsProvider({ children }: { children: ReactNode }) {
         throw err;
       }
     },
-    [raw.rawBookings],
+    [raw.rawBookings, isSuperAdmin],
   );
 
   const createBooking = useCallback(
     async (draft: NewBookingDraft): Promise<OpsBooking> => {
+      if (!isSuperAdmin) throw onlyAdminError('create bookings');
       if (!profile || !propertyId || !raw.property) throw new Error('No property assigned.');
       const unit = unitByExternalId.get(draft.unit);
       if (!unit) throw new Error(`Residence ${draft.unit} not found.`);
@@ -446,7 +557,7 @@ export function OpsProvider({ children }: { children: ReactNode }) {
         attendantName: attendant?.name ?? '—',
       });
     },
-    [profile, propertyId, raw.property, raw.attendants, unitByExternalId, serviceLookup.bySlug],
+    [profile, propertyId, raw.property, raw.attendants, unitByExternalId, serviceLookup.bySlug, isSuperAdmin],
   );
 
   const value = useMemo<OpsContextValue>(
@@ -498,6 +609,7 @@ export function OpsProvider({ children }: { children: ReactNode }) {
       closePalette: () => setPaletteOpen(false),
       togglePalette: () => setPaletteOpen((v) => !v),
       setBookingStatus,
+      confirmBookingWithAssignee,
       cancelBooking,
       createBooking,
       markArrived,
@@ -505,6 +617,9 @@ export function OpsProvider({ children }: { children: ReactNode }) {
       updateUnit,
       deleteUnit,
       toggleUnitStatus,
+      referrals,
+      createReferral,
+      refreshReferrals,
       refresh: load,
     }),
     [
@@ -524,6 +639,7 @@ export function OpsProvider({ children }: { children: ReactNode }) {
       newBookingPrefill,
       paletteOpen,
       setBookingStatus,
+      confirmBookingWithAssignee,
       cancelBooking,
       createBooking,
       markArrived,
@@ -531,6 +647,9 @@ export function OpsProvider({ children }: { children: ReactNode }) {
       updateUnit,
       deleteUnit,
       toggleUnitStatus,
+      referrals,
+      createReferral,
+      refreshReferrals,
       load,
     ],
   );

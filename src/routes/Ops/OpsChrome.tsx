@@ -16,12 +16,12 @@ export interface OpsChromeProps {
   children: ReactNode;
 }
 
+// Managers only — Bookings is the read-only feed of their building's
+// activity, Referrals is where they hand off leads to AP. Everything else
+// (pipeline, residences CRUD, reports) lives in the super admin console.
 const NAV_ITEMS: { id: OpsView; label: string; icon: string }[] = [
-  { id: 'pipeline',   label: 'Pipeline',   icon: 'kanban-square' },
-  { id: 'bookings',   label: 'Bookings',   icon: 'calendar-check' },
-  { id: 'residences', label: 'Residences', icon: 'building-2' },
-  { id: 'residents',  label: 'Residents',  icon: 'users' },
-  { id: 'reports',    label: 'Reports',    icon: 'chart-no-axes-column' },
+  { id: 'bookings',  label: 'Bookings',  icon: 'calendar-check' },
+  { id: 'referrals', label: 'Referrals', icon: 'send' },
 ];
 
 const chromeIconBtn: CSSProperties = {

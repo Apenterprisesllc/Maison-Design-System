@@ -7,9 +7,8 @@ import { renderWithProviders, signInAs, signOutForTest } from '../../test/test-u
 function TestRoutes() {
   return (
     <Routes>
-      <Route path="/sign-in/resident" element={<div>RESIDENT SIGN-IN</div>} />
+      <Route path="/book" element={<div>BOOK</div>} />
       <Route path="/sign-in/manager" element={<div>MANAGER SIGN-IN</div>} />
-      <Route path="/portal" element={<div>RESIDENT HOME</div>} />
       <Route path="/ops" element={<div>OPS HOME</div>} />
       <Route path="/admin" element={<div>ADMIN HOME</div>} />
       <Route path="/auth/reset" element={<div>RESET GATE</div>} />
@@ -45,7 +44,8 @@ describe('ProtectedRoute', () => {
   it('redirects anonymous users to the role-appropriate sign-in page', async () => {
     await signOutForTest();
     renderWithProviders(<TestRoutes />, { route: '/private-resident' });
-    expect(await screen.findByText('RESIDENT SIGN-IN')).toBeInTheDocument();
+    // Residents no longer have an authenticated portal — they land in /book.
+    expect(await screen.findByText('BOOK')).toBeInTheDocument();
   });
 
   it('redirects to /auth/reset when the profile requires a password change', async () => {
@@ -63,7 +63,8 @@ describe('ProtectedRoute', () => {
   it('bounces a resident off a manager-only route to their role home', async () => {
     await signInAs('resident@thearden.test', 'ResidentPass2026!');
     renderWithProviders(<TestRoutes />, { route: '/private-manager' });
-    expect(await screen.findByText('RESIDENT HOME')).toBeInTheDocument();
+    // Resident "home" is now the public booking flow.
+    expect(await screen.findByText('BOOK')).toBeInTheDocument();
   });
 
   it('lets a super_admin through resident, manager, and admin routes', async () => {

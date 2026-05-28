@@ -5,7 +5,13 @@
 
 import type { OpsPillTone } from './OpsPrimitives';
 
-export type BookingStatus = 'scheduled' | 'enroute' | 'active' | 'closed' | 'cancelled';
+export type BookingStatus =
+  | 'scheduled'
+  | 'confirmed'
+  | 'enroute'
+  | 'active'
+  | 'closed'
+  | 'cancelled';
 
 export interface OpsBooking {
   id: string;          // uuid — stable key for drag-drop / drawer lookup
@@ -16,7 +22,10 @@ export interface OpsBooking {
   resident: string;    // "Ashcombe"
   service: string;     // "Window Service"
   serviceKey: string;  // service slug
-  attendant: string;   // "Hudson & Co."
+  attendant: string;   // "Hudson & Co." — vendor company
+  /** Free-form name of the person performing the visit (e.g. "Jorge"). Set
+   *  when the manager moves the card to the Confirmed column. */
+  assignee?: string;
   status: BookingStatus;
   note?: string;
   duration?: string;
@@ -47,6 +56,7 @@ export interface OpsUnit {
 
 export const STATUS_LABEL: Record<BookingStatus, string> = {
   scheduled: 'Scheduled',
+  confirmed: 'Confirmed',
   enroute: 'En Route',
   active: 'In Progress',
   closed: 'Closed',
@@ -55,6 +65,7 @@ export const STATUS_LABEL: Record<BookingStatus, string> = {
 
 export const STATUS_TONE: Record<BookingStatus, OpsPillTone> = {
   scheduled: 'info',
+  confirmed: 'success',
   enroute: 'warning',
   active: 'success',
   closed: 'neutral',

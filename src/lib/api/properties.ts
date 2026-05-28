@@ -1,6 +1,24 @@
 import { supabase } from '../supabase';
 import type { PropertyRow } from '../types/db';
 
+export interface WeeklyBookingCount {
+  property_id: string;
+  day: string; // 'YYYY-MM-DD'
+  count: number;
+}
+
+export async function getWeeklyBookingCounts(
+  start: Date,
+  end: Date,
+): Promise<WeeklyBookingCount[]> {
+  const { data, error } = await supabase.rpc('get_weekly_booking_counts', {
+    p_start: start.toISOString(),
+    p_end: end.toISOString(),
+  });
+  if (error) throw error;
+  return (data ?? []) as WeeklyBookingCount[];
+}
+
 export async function getProperty(id: string): Promise<PropertyRow | null> {
   const { data, error } = await supabase.from('properties').select('*').eq('id', id).maybeSingle();
   if (error) throw error;
@@ -142,7 +160,7 @@ export async function listPropertiesWithStats(): Promise<PropertyStats[]> {
       units_active: pUnits.filter((u) => u.status === 'active').length,
       bookings_total: pBookings.length,
       bookings_active: pBookings.filter((b) =>
-        ['scheduled', 'enroute', 'active'].includes(b.status),
+        ['scheduled', 'confirmed', 'enroute', 'active'].includes(b.status),
       ).length,
       residents_total: pMembers.length,
       manager_email: pManager?.email ?? null,

@@ -41,6 +41,7 @@ function readResidentSnapshot(value: unknown): ResidentSnapshot & { unit?: UnitS
 
 const PORTAL_STATUS_MAP: Record<DbBookingStatus, PortalBookingStatus> = {
   scheduled: 'confirmed',
+  confirmed: 'confirmed',
   enroute: 'confirmed',
   active: 'confirmed',
   closed: 'closed',
@@ -49,6 +50,7 @@ const PORTAL_STATUS_MAP: Record<DbBookingStatus, PortalBookingStatus> = {
 
 const PORTAL_STATUS_LABEL: Record<DbBookingStatus, string> = {
   scheduled: 'Confirmed',
+  confirmed: 'Confirmed',
   enroute: 'En Route',
   active: 'In Progress',
   closed: 'Closed',
@@ -57,6 +59,7 @@ const PORTAL_STATUS_LABEL: Record<DbBookingStatus, string> = {
 
 const PORTAL_STATUS_TONE: Record<DbBookingStatus, PillTone> = {
   scheduled: 'success',
+  confirmed: 'success',
   enroute: 'warning',
   active: 'info',
   closed: 'neutral',
@@ -115,5 +118,6 @@ export function toOpsBooking(
     scheduledAt: row.scheduled_at,
   };
   if (row.note) result.note = row.note;
+  if (row.assignee_name) result.assignee = row.assignee_name;
   return result;
 }

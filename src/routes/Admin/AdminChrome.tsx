@@ -10,8 +10,13 @@ export interface AdminChromeProps {
 }
 
 const NAV: { to: string; label: string }[] = [
-  { to: '/admin', label: 'Overview' },
-  { to: '/admin/managers', label: 'Managers' },
+  { to: '/admin',            label: 'Console' },
+  { to: '/admin/pipeline',   label: 'Pipeline' },
+  { to: '/admin/bookings',   label: 'Bookings' },
+  { to: '/admin/properties', label: 'Properties' },
+  { to: '/admin/managers',   label: 'Managers' },
+  { to: '/admin/referrals',  label: 'Referrals' },
+  { to: '/admin/reports',    label: 'Reports' },
 ];
 
 export function AdminChrome({ onSignOut, children }: AdminChromeProps) {

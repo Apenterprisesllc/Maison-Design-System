@@ -3,38 +3,29 @@ import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import gsap from 'gsap';
 import { ToastProvider } from '../../components';
 import { useAuth } from '../../lib/auth';
-import { CommandPalette } from './CommandPalette';
 import { OpsProvider, useOps } from './context';
 import { BookingDetailDrawer } from './BookingDetailDrawer';
-import { NewBookingModal } from './NewBookingModal';
+import { CommandPalette } from './CommandPalette';
 import { OpsChrome } from './OpsChrome';
-import { UnitDetailDrawer } from './UnitDetailDrawer';
 
 import type { OpsView } from './navigation';
 
 const PATH_FOR_VIEW: Record<OpsView, string> = {
-  pipeline: '/ops',
-  bookings: '/ops/bookings',
-  residences: '/ops/residences',
-  residents: '/ops/residents',
-  reports: '/ops/reports',
+  bookings: '/ops',
+  referrals: '/ops/referrals',
 };
 
 function pathToView(pathname: string): OpsView {
-  if (pathname === '/ops' || pathname === '/ops/') return 'pipeline';
-  if (pathname.startsWith('/ops/bookings')) return 'bookings';
-  if (pathname.startsWith('/ops/residences')) return 'residences';
-  if (pathname.startsWith('/ops/residents')) return 'residents';
-  if (pathname.startsWith('/ops/reports')) return 'reports';
-  return 'pipeline';
+  if (pathname.startsWith('/ops/referrals')) return 'referrals';
+  return 'bookings';
 }
 
 function OpsShell() {
   const navigate = useNavigate();
   const location = useLocation();
   const viewRef = useRef<HTMLDivElement>(null);
-  const { togglePalette, openPalette } = useOps();
   const { signOut } = useAuth();
+  const { openPalette, togglePalette } = useOps();
 
   async function handleSignOut() {
     await signOut();
@@ -55,11 +46,10 @@ function OpsShell() {
     );
   }, [location.pathname]);
 
-  // Global ⌘K shortcut
+  // ⌘K / Ctrl+K toggles the command palette anywhere inside /ops.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      const isCmd = e.metaKey || e.ctrlKey;
-      if (isCmd && e.key.toLowerCase() === 'k') {
+      if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) {
         e.preventDefault();
         togglePalette();
       }
@@ -72,7 +62,7 @@ function OpsShell() {
     <>
       <OpsChrome
         active={activeView}
-        onNav={(v) => navigate(PATH_FOR_VIEW[v])}
+        onNav={(v) => navigate(`${PATH_FOR_VIEW[v]}${location.search}`)}
         onOpenSearch={openPalette}
         onSignOut={handleSignOut}
       >
@@ -81,10 +71,8 @@ function OpsShell() {
         </div>
       </OpsChrome>
 
-      <CommandPalette />
       <BookingDetailDrawer />
-      <UnitDetailDrawer />
-      <NewBookingModal />
+      <CommandPalette />
     </>
   );
 }

@@ -125,7 +125,7 @@ export type Database = {
       booking_status_events: {
         Row: {
           booking_id: string
-          changed_by: string
+          changed_by: string | null
           created_at: string
           from_status: Database["public"]["Enums"]["booking_status"] | null
           id: string
@@ -134,7 +134,7 @@ export type Database = {
         }
         Insert: {
           booking_id: string
-          changed_by: string
+          changed_by?: string | null
           created_at?: string
           from_status?: Database["public"]["Enums"]["booking_status"] | null
           id?: string
@@ -143,7 +143,7 @@ export type Database = {
         }
         Update: {
           booking_id?: string
-          changed_by?: string
+          changed_by?: string | null
           created_at?: string
           from_status?: Database["public"]["Enums"]["booking_status"] | null
           id?: string
@@ -163,13 +163,18 @@ export type Database = {
       bookings: {
         Row: {
           arrived_at: string | null
+          assignee_name: string | null
           attendant_id: string | null
           cancelled_at: string | null
           cancelled_reason: string | null
           created_at: string
-          created_by: string
+          created_by: string | null
           duration_min: number
+          guest_address: string | null
+          guest_name: string | null
+          guest_phone: string | null
           id: string
+          is_guest: boolean
           note: string | null
           price_cents: number
           property_id: string
@@ -184,17 +189,22 @@ export type Database = {
         }
         Insert: {
           arrived_at?: string | null
+          assignee_name?: string | null
           attendant_id?: string | null
           cancelled_at?: string | null
           cancelled_reason?: string | null
           created_at?: string
-          created_by: string
+          created_by?: string | null
           duration_min?: number
+          guest_address?: string | null
+          guest_name?: string | null
+          guest_phone?: string | null
           id?: string
+          is_guest?: boolean
           note?: string | null
           price_cents: number
           property_id: string
-          reference: string
+          reference?: string
           resident_snapshot?: Json
           scheduled_at: string
           service_id: string
@@ -205,13 +215,18 @@ export type Database = {
         }
         Update: {
           arrived_at?: string | null
+          assignee_name?: string | null
           attendant_id?: string | null
           cancelled_at?: string | null
           cancelled_reason?: string | null
           created_at?: string
-          created_by?: string
+          created_by?: string | null
           duration_min?: number
+          guest_address?: string | null
+          guest_name?: string | null
+          guest_phone?: string | null
           id?: string
+          is_guest?: boolean
           note?: string | null
           price_cents?: number
           property_id?: string
@@ -251,6 +266,42 @@ export type Database = {
             columns: ["unit_id"]
             isOneToOne: false
             referencedRelation: "units"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      property_review_state: {
+        Row: {
+          last_reviewed_at: string
+          property_id: string
+          super_admin_id: string
+          updated_at: string
+        }
+        Insert: {
+          last_reviewed_at?: string
+          property_id: string
+          super_admin_id: string
+          updated_at?: string
+        }
+        Update: {
+          last_reviewed_at?: string
+          property_id?: string
+          super_admin_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "property_review_state_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "property_review_state_super_admin_id_fkey"
+            columns: ["super_admin_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -376,6 +427,86 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      referrals: {
+        Row: {
+          booking_id: string | null
+          commission_status: Database["public"]["Enums"]["commission_status"]
+          created_at: string
+          id: string
+          note: string | null
+          property_id: string
+          reference: string
+          referred_name: string
+          referred_phone: string
+          referrer_id: string
+          status: Database["public"]["Enums"]["referral_status"]
+          suggested_service_id: string | null
+          unit_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          booking_id?: string | null
+          commission_status?: Database["public"]["Enums"]["commission_status"]
+          created_at?: string
+          id?: string
+          note?: string | null
+          property_id: string
+          reference?: string
+          referred_name: string
+          referred_phone: string
+          referrer_id: string
+          status?: Database["public"]["Enums"]["referral_status"]
+          suggested_service_id?: string | null
+          unit_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          booking_id?: string | null
+          commission_status?: Database["public"]["Enums"]["commission_status"]
+          created_at?: string
+          id?: string
+          note?: string | null
+          property_id?: string
+          reference?: string
+          referred_name?: string
+          referred_phone?: string
+          referrer_id?: string
+          status?: Database["public"]["Enums"]["referral_status"]
+          suggested_service_id?: string | null
+          unit_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referrals_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referrals_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referrals_suggested_service_id_fkey"
+            columns: ["suggested_service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referrals_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: false
+            referencedRelation: "units"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       services: {
         Row: {
@@ -532,25 +663,42 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_property_new_counts: {
+        Args: Record<PropertyKey, never>
+        Returns: { property_id: string; new_count: number }[]
+      }
+      get_weekly_booking_counts: {
+        Args: { p_start: string; p_end: string }
+        Returns: { property_id: string; day: string; count: number }[]
+      }
       is_manager_of: { Args: { p_property: string }; Returns: boolean }
       is_super_admin: { Args: never; Returns: boolean }
       is_unit_member: { Args: { p_unit: string }; Returns: boolean }
+      mark_property_reviewed: { Args: { p_property_id: string }; Returns: void }
     }
     Enums: {
       attachment_kind: "before" | "after" | "incident" | "invoice" | "other"
       booking_status:
         | "scheduled"
+        | "confirmed"
         | "enroute"
         | "active"
         | "closed"
         | "cancelled"
       client_track: "residential" | "commercial"
+      commission_status: "pending" | "paid"
       notification_kind:
         | "booking_created"
         | "booking_status_changed"
         | "booking_cancelled"
         | "unit_invited"
         | "password_reset"
+      referral_status:
+        | "pending"
+        | "contacted"
+        | "booked"
+        | "completed"
+        | "declined"
       service_cadence:
         | "once"
         | "on_request"
@@ -695,8 +843,9 @@ export const Constants = {
   public: {
     Enums: {
       attachment_kind: ["before", "after", "incident", "invoice", "other"],
-      booking_status: ["scheduled", "enroute", "active", "closed", "cancelled"],
+      booking_status: ["scheduled", "confirmed", "enroute", "active", "closed", "cancelled"],
       client_track: ["residential", "commercial"],
+      commission_status: ["pending", "paid"],
       notification_kind: [
         "booking_created",
         "booking_status_changed",
@@ -704,6 +853,7 @@ export const Constants = {
         "unit_invited",
         "password_reset",
       ],
+      referral_status: ["pending", "contacted", "booked", "completed", "declined"],
       service_cadence: [
         "once",
         "on_request",
@@ -741,6 +891,11 @@ export type BookingStatusEventRow = Database['public']['Tables']['booking_status
 export type BookingAttachmentRow = Database['public']['Tables']['booking_attachments']['Row'];
 export type NotificationRow = Database['public']['Tables']['notifications']['Row'];
 export type AttendantMessageRow = Database['public']['Tables']['attendant_messages']['Row'];
+export type PropertyReviewStateRow = Database['public']['Tables']['property_review_state']['Row'];
+export type ReferralRow = Database['public']['Tables']['referrals']['Row'];
+export type ReferralInsert = Database['public']['Tables']['referrals']['Insert'];
+export type ReferralStatus = Database['public']['Enums']['referral_status'];
+export type CommissionStatus = Database['public']['Enums']['commission_status'];
 
 export type UserRole = Database['public']['Enums']['user_role'];
 export type ClientTrack = Database['public']['Enums']['client_track'];

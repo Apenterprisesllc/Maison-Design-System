@@ -1,7 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { CSSProperties } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CountUp, Field, useLucide, useReveal } from '../../components';
+import { CountBadge, CountUp, Field, useLucide, useReveal } from '../../components';
 import {
   Kpi,
   OpsButton,
@@ -16,6 +16,10 @@ import { AddPropertyModal } from './AddPropertyModal';
 import { AddManagerModal } from './AddManagerModal';
 import { EditPropertyModal } from './EditPropertyModal';
 import { DeletePropertyModal } from './DeletePropertyModal';
+import {
+  getPropertyNewCounts,
+  markPropertyReviewed,
+} from '../../lib/api/propertyReviewState';
 import type { PropertyRow } from '../../lib/types/db';
 
 const td: CSSProperties = {
@@ -36,6 +40,33 @@ export function Overview() {
   const [editTarget, setEditTarget] = useState<PropertyRow | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<PropertyRow | null>(null);
   const [search, setSearch] = useState('');
+  const [newCounts, setNewCounts] = useState<Record<string, number>>({});
+
+  async function loadCounts() {
+    try {
+      const rows = await getPropertyNewCounts();
+      const next: Record<string, number> = {};
+      for (const r of rows) next[r.property_id] = r.new_count;
+      setNewCounts(next);
+    } catch (err) {
+      console.error('[admin/overview] new-count load failed', err);
+    }
+  }
+
+  useEffect(() => {
+    loadCounts();
+  }, []);
+
+  async function reviewProperty(propertyId: string) {
+    if (!newCounts[propertyId]) return;
+    setNewCounts((prev) => ({ ...prev, [propertyId]: 0 }));
+    try {
+      await markPropertyReviewed(propertyId);
+    } catch (err) {
+      console.error('[admin/overview] mark reviewed failed', err);
+      loadCounts();
+    }
+  }
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -66,7 +97,7 @@ export function Overview() {
         : `${propertiesWithoutManager} properties without a manager`;
 
   return (
-    <div ref={ref} style={{ padding: 'clamp(24px, 4vw, 40px) clamp(20px, 4vw, 40px) 80px', maxWidth: 1320, margin: '0 auto' }}>
+    <div ref={ref}>
       <div
         style={{
           display: 'flex',
@@ -74,35 +105,23 @@ export function Overview() {
           justifyContent: 'space-between',
           flexWrap: 'wrap',
           gap: 16,
+          marginBottom: 8,
         }}
       >
         <div>
-          <OpsEyebrow>AP Enterprises · Platform</OpsEyebrow>
-          <h1
+          <OpsEyebrow>Stewardship</OpsEyebrow>
+          <h2
             style={{
               fontFamily: 'Fraunces, serif',
-              fontWeight: 300,
-              fontSize: 'clamp(32px, 4vw, 42px)',
-              letterSpacing: '-0.02em',
-              margin: '6px 0 0',
+              fontWeight: 400,
+              fontSize: 26,
+              letterSpacing: '-0.01em',
+              margin: '4px 0 0',
               color: '#1A1A1A',
             }}
           >
-            Overview
-          </h1>
-          <p
-            style={{
-              fontFamily: 'Inter, sans-serif',
-              fontSize: 14,
-              color: '#4A4A4A',
-              margin: '10px 0 0',
-              maxWidth: 580,
-              lineHeight: 1.6,
-            }}
-          >
-            Every property under AP Enterprises stewardship. Add new buildings, invite
-            their managers, and drill into any property's operations.
-          </p>
+            Properties under AP
+          </h2>
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <OpsButton
@@ -117,7 +136,7 @@ export function Overview() {
           </OpsButton>
         </div>
       </div>
-      <OpsHairline width={64} margin="24px 0 32px" />
+      <OpsHairline width={48} margin="16px 0 24px" />
 
       {/* KPIs */}
       <div
@@ -256,17 +275,34 @@ export function Overview() {
                   </td>
                 </tr>
               )}
-              {filtered.map((p, i) => (
+              {filtered.map((p, i) => {
+                const unread = newCounts[p.property.id] ?? 0;
+                const hasUnread = unread > 0;
+                return (
                 <tr
                   key={p.property.id}
                   data-reveal
+                  onClick={() => reviewProperty(p.property.id)}
                   style={{
                     borderTop: i === 0 ? '0' : '1px solid var(--color-taupe-soft)',
-                    background: i % 2 === 1 ? 'rgba(241,236,224,0.35)' : 'transparent',
+                    background: hasUnread
+                      ? 'rgba(196,151,62,0.06)'
+                      : i % 2 === 1
+                        ? 'rgba(241,236,224,0.35)'
+                        : 'transparent',
+                    boxShadow: hasUnread ? 'inset 3px 0 0 var(--color-champagne-deep)' : 'none',
+                    cursor: hasUnread ? 'pointer' : 'default',
+                    transition: 'background-color var(--dur-state) var(--ease-out), box-shadow var(--dur-state) var(--ease-out)',
                   }}
                 >
                   <td style={{ ...td, fontFamily: 'Fraunces, serif', fontSize: 16 }}>
-                    {p.property.name}
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}>
+                      <span style={{ fontWeight: hasUnread ? 500 : 400 }}>{p.property.name}</span>
+                      <CountBadge
+                        count={unread}
+                        ariaLabel={`${unread} new ${unread === 1 ? 'booking' : 'bookings'} since your last review`}
+                      />
+                    </span>
                     <div
                       style={{
                         fontFamily: 'Inter, sans-serif',
@@ -308,7 +344,10 @@ export function Overview() {
                     ) : (
                       <button
                         type="button"
-                        onClick={() => addManagerFor(p.property.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          addManagerFor(p.property.id);
+                        }}
                         style={{
                           background: 'transparent',
                           border: 0,
@@ -331,7 +370,8 @@ export function Overview() {
                     <RowAction icon="trash-2" label="Delete" tone="danger" onClick={() => setDeleteTarget(p.property)} />
                   </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -384,7 +424,10 @@ function RowAction({
   return (
     <button
       type="button"
-      onClick={onClick}
+      onClick={(e) => {
+        e.stopPropagation();
+        onClick();
+      }}
       aria-label={label}
       title={label}
       style={{

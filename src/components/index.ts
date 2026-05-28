@@ -63,6 +63,9 @@ export type { HelpPopoverProps } from './HelpPopover';
 
 export { NotificationBell } from './NotificationBell';
 
+export { CountBadge } from './CountBadge';
+export type { CountBadgeProps } from './CountBadge';
+
 export { useLucide } from '../hooks/useLucide';
 export { useReveal } from '../hooks/useReveal';
 export { useCountUp } from '../hooks/useCountUp';

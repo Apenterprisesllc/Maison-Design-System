@@ -7,6 +7,9 @@ import type { Service } from './types';
 
 export interface ServiceCardProps {
   service: Service;
+  /** Override the destination link. Defaults to the resident portal booking
+   *  flow so existing call sites keep working. */
+  to?: string;
 }
 
 const SERVICE_IMG: Record<string, string> = {
@@ -27,7 +30,7 @@ const SERVICE_IMG: Record<string, string> = {
   'real-estate': IMAGERY.serviceRealEstate,
 };
 
-export function ServiceCard({ service }: ServiceCardProps) {
+export function ServiceCard({ service, to }: ServiceCardProps) {
   const [hover, setHover] = useState(false);
   const [loaded, setLoaded] = useState(false);
   // Prefer a property-uploaded photo from Storage; fall back to the brand stock library.
@@ -35,7 +38,7 @@ export function ServiceCard({ service }: ServiceCardProps) {
 
   return (
     <Link
-      to={`/portal/services/${service.id}/book`}
+      to={to ?? `/portal/services/${service.id}/book`}
       aria-label={`Schedule ${service.name}`}
       data-reveal
       onMouseEnter={() => setHover(true)}

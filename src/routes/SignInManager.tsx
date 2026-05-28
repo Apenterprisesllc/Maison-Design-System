@@ -20,11 +20,12 @@ export function SignInManager() {
 
   const [wrongRoleHint, setWrongRoleHint] = useState<'resident' | null>(null);
 
-  // Switch to the resident sign-in. If currently signed in, end the session
-  // first so the resident form actually renders instead of bouncing back.
+  // Residents and commercial users no longer have credentials — send them to
+  // the public booking site instead. End the session first so the new flow
+  // renders without a stale token.
   async function switchToResident() {
     if (status === 'authenticated') await signOut();
-    navigate('/sign-in/resident');
+    navigate('/book');
   }
 
   // Only auto-forward when the signed-in user actually belongs here. If a
@@ -85,8 +86,16 @@ export function SignInManager() {
     }
     if (prof.role !== 'property_manager' && prof.role !== 'super_admin') {
       await signOut();
-      setServerError('This sign-in is reserved for property managers.');
-      setWrongRoleHint(prof.role === 'resident' || prof.role === 'attendant' ? 'resident' : null);
+      if (prof.role === 'resident') {
+        setServerError('Residents schedule services without signing in. Use the booking page.');
+        setWrongRoleHint('resident');
+      } else if (prof.role === 'attendant') {
+        setServerError('Attendants do not have a portal — coordinate visits with AP directly.');
+        setWrongRoleHint(null);
+      } else {
+        setServerError('This sign-in is reserved for property managers.');
+        setWrongRoleHint(null);
+      }
       return;
     }
     if (prof.must_change_password) {
@@ -301,7 +310,7 @@ export function SignInManager() {
                       letterSpacing: '0.08em',
                     }}
                   >
-                    Go to resident sign-in →
+                    Schedule a service →
                   </button>
                 )}
               </div>

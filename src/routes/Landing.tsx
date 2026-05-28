@@ -33,7 +33,7 @@ export function Landing() {
 
   const pickTrack = (track: 'residential' | 'commercial') => {
     setScheduleOpen(false);
-    navigate(`/sign-in/resident?track=${track}`);
+    navigate(`/book?track=${track}`);
   };
 
   useGSAP(() => {
@@ -952,14 +952,29 @@ export function Landing() {
             </p>
           </div>
           <FooterCol
-            heading="For Residents"
-            links={['Sign In', 'How It Works', 'Catalogue', 'Concierge Help']}
+            heading="Schedule"
+            links={[
+              { label: 'Residential', to: '/book?track=residential' },
+              { label: 'Commercial', to: '/book?track=commercial' },
+              { label: 'All communities', to: '/book' },
+            ]}
           />
           <FooterCol
             heading="For Managers"
-            links={['Operations', 'Onboarding', 'Vendor Network', 'Reporting']}
+            links={[
+              { label: 'Operations sign-in', to: '/sign-in/manager' },
+              { label: 'How we work', to: '#process' },
+              { label: 'The standard', to: '#standard' },
+            ]}
           />
-          <FooterCol heading="Legal" links={['Privacy', 'Terms', 'Accessibility', 'Press']} />
+          <FooterCol
+            heading="AP Enterprises"
+            links={[
+              { label: '(561) 385-1564', to: 'tel:+15613851564' },
+              { label: 'apenterprisesllc.web@gmail.com', to: 'mailto:apenterprisesllc.web@gmail.com' },
+              { label: 'South Florida', to: '#' },
+            ]}
+          />
         </div>
         <div
           style={{
@@ -1192,7 +1207,12 @@ function TrackCard({
   );
 }
 
-function FooterCol({ heading, links }: { heading: string; links: string[] }) {
+interface FooterLink {
+  label: string;
+  to: string;
+}
+
+function FooterCol({ heading, links }: { heading: string; links: FooterLink[] }) {
   return (
     <div>
       <div
@@ -1208,22 +1228,30 @@ function FooterCol({ heading, links }: { heading: string; links: string[] }) {
         {heading}
       </div>
       <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
-        {links.map((l) => (
-          <li key={l}>
-            <a
-              href="#"
-              style={{
-                color: 'rgba(244,247,250,0.75)',
-                fontFamily: 'var(--font-sans)',
-                fontSize: 14,
-                textDecoration: 'none',
-                border: 0,
-              }}
-            >
-              {l}
-            </a>
-          </li>
-        ))}
+        {links.map((l) => {
+          const isExternal = l.to.startsWith('mailto:') || l.to.startsWith('tel:') || l.to.startsWith('http');
+          const isAnchor = l.to.startsWith('#');
+          const linkStyle = {
+            color: 'rgba(244,247,250,0.75)',
+            fontFamily: 'var(--font-sans)',
+            fontSize: 14,
+            textDecoration: 'none',
+            border: 0,
+          } as const;
+          return (
+            <li key={l.label}>
+              {isExternal || isAnchor ? (
+                <a href={l.to} style={linkStyle}>
+                  {l.label}
+                </a>
+              ) : (
+                <Link to={l.to} style={linkStyle}>
+                  {l.label}
+                </Link>
+              )}
+            </li>
+          );
+        })}
       </ul>
     </div>
   );
