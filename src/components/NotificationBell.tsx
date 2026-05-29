@@ -17,12 +17,18 @@ const KIND_LABEL: Record<string, string> = {
   booking_created: 'New booking',
   booking_status_changed: 'Booking updated',
   booking_cancelled: 'Booking cancelled',
+  referral_created: 'New referral',
   unit_invited: 'Unit invitation',
   password_reset: 'Password reset',
 };
 
 function describe(notif: NotificationRow): { title: string; body: string } {
-  const payload = (notif.payload ?? {}) as { reference?: string; status?: string; service?: { name?: string } };
+  const payload = (notif.payload ?? {}) as {
+    reference?: string;
+    status?: string;
+    service?: { name?: string };
+    referred_name?: string;
+  };
   const ref = payload.reference ?? '';
   const svc = payload.service?.name ?? 'Booking';
   switch (notif.kind) {
@@ -32,6 +38,8 @@ function describe(notif: NotificationRow): { title: string; body: string } {
       return { title: `${ref} · ${payload.status ?? ''}`, body: svc };
     case 'booking_cancelled':
       return { title: `Cancelled · ${ref}`, body: svc };
+    case 'referral_created':
+      return { title: `New referral · ${ref}`, body: payload.referred_name ?? '' };
     default:
       return { title: KIND_LABEL[notif.kind] ?? notif.kind, body: '' };
   }

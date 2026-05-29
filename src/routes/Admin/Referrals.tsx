@@ -9,6 +9,7 @@ import {
   updateReferralStatus as apiUpdateStatus,
 } from '../../lib/api/referrals';
 import { supabase } from '../../lib/supabase';
+import { subscribeToReferrals } from '../../lib/realtime/bookings';
 import type {
   CommissionStatus,
   ProfileRow,
@@ -89,6 +90,14 @@ export function AdminReferrals() {
 
   useEffect(() => {
     load();
+  }, [load]);
+
+  // Live update: new referrals and status changes land without a manual reload.
+  useEffect(() => {
+    const unsub = subscribeToReferrals(() => {
+      load();
+    });
+    return unsub;
   }, [load]);
 
   const propertyNameById = useMemo(() => {
@@ -272,12 +281,34 @@ export function AdminReferrals() {
                       <>
                         <OpsButton
                           variant="ghost"
-                          icon="x"
-                          onClick={() => setStatus(r.id, 'declined')}
+                          icon="calendar-check"
+                          onClick={() => setStatus(r.id, 'booked')}
                         >
-                          Declined
+                          Booked
                         </OpsButton>
+                        <span style={{ display: 'inline-block', width: 6 }} />
                       </>
+                    )}
+                    {r.status === 'booked' && (
+                      <>
+                        <OpsButton
+                          variant="ghost"
+                          icon="check"
+                          onClick={() => setStatus(r.id, 'completed')}
+                        >
+                          Completed
+                        </OpsButton>
+                        <span style={{ display: 'inline-block', width: 6 }} />
+                      </>
+                    )}
+                    {(r.status === 'pending' || r.status === 'contacted' || r.status === 'booked') && (
+                      <OpsButton
+                        variant="ghost"
+                        icon="x"
+                        onClick={() => setStatus(r.id, 'declined')}
+                      >
+                        Declined
+                      </OpsButton>
                     )}
                     {r.note && <span title={r.note} style={{ marginLeft: 6, color: '#8A8378', fontSize: 11, cursor: 'help' }}>note</span>}
                   </td>

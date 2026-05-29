@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { NotificationBell, useLucide } from '../../components';
 import { useAuth } from '../../lib/auth';
 import { OpsIcon, OpsMark } from '../Ops/OpsPrimitives';
+import { useAdmin } from './context';
 
 export interface AdminChromeProps {
   onSignOut: () => Promise<void> | void;
@@ -21,6 +22,7 @@ const NAV: { to: string; label: string }[] = [
 
 export function AdminChrome({ onSignOut, children }: AdminChromeProps) {
   const { profile } = useAuth();
+  const { pendingReferrals } = useAdmin();
   const location = useLocation();
   useLucide();
 
@@ -101,6 +103,9 @@ export function AdminChrome({ onSignOut, children }: AdminChromeProps) {
               item.to === '/admin'
                 ? location.pathname === '/admin'
                 : location.pathname.startsWith(item.to);
+            const badge = item.to === '/admin/referrals' && pendingReferrals > 0
+              ? pendingReferrals
+              : 0;
             return (
               <Link
                 key={item.to}
@@ -114,9 +119,34 @@ export function AdminChrome({ onSignOut, children }: AdminChromeProps) {
                   borderRadius: 4,
                   background: active ? 'rgba(244,247,250,0.08)' : 'transparent',
                   transition: 'background var(--dur-state) var(--ease-out), color var(--dur-state) var(--ease-out)',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 7,
                 }}
               >
                 {item.label}
+                {badge > 0 && (
+                  <span
+                    aria-label={`${badge} pending`}
+                    style={{
+                      fontFamily: 'Inter, sans-serif',
+                      fontSize: 10,
+                      fontWeight: 600,
+                      lineHeight: 1,
+                      minWidth: 16,
+                      height: 16,
+                      padding: '0 5px',
+                      borderRadius: 8,
+                      background: 'var(--color-champagne)',
+                      color: '#0A0A0A',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    {badge}
+                  </span>
+                )}
               </Link>
             );
           })}

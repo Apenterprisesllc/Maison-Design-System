@@ -6,10 +6,13 @@ import {
   listPropertiesWithStats,
   type PropertyStats,
 } from '../../lib/api/properties';
+import { listAllReferrals } from '../../lib/api/referrals';
 
 export interface AdminContextValue {
   loading: boolean;
   properties: PropertyStats[];
+  /** Pending referrals awaiting AP follow-up — drives the nav badge. */
+  pendingReferrals: number;
   /** Aggregate KPIs across all properties. */
   totals: {
     properties: number;
@@ -26,14 +29,19 @@ const AdminContext = createContext<AdminContextValue | null>(null);
 export function AdminProvider({ children }: { children: ReactNode }) {
   const { profile } = useAuth();
   const [properties, setProperties] = useState<PropertyStats[]>([]);
+  const [pendingReferrals, setPendingReferrals] = useState(0);
   const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(async () => {
     if (!profile) return;
     setLoading(true);
     try {
-      const data = await listPropertiesWithStats();
+      const [data, referrals] = await Promise.all([
+        listPropertiesWithStats(),
+        listAllReferrals(),
+      ]);
       setProperties(data);
+      setPendingReferrals(referrals.filter((r) => r.status === 'pending').length);
     } catch (err) {
       console.error('[admin] load failed', err);
     } finally {
@@ -50,7 +58,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
   const debounceRef = useRef<number | null>(null);
   useEffect(() => {
     if (!profile) return;
-    const tables = ['properties', 'units', 'bookings', 'unit_members', 'profiles'];
+    const tables = ['properties', 'units', 'bookings', 'unit_members', 'profiles', 'referrals'];
     const channels = tables.map((table) =>
       supabase
         .channel(`admin:${table}`)
@@ -82,8 +90,8 @@ export function AdminProvider({ children }: { children: ReactNode }) {
   }, [properties]);
 
   const value = useMemo<AdminContextValue>(
-    () => ({ loading, properties, totals, refresh }),
-    [loading, properties, totals, refresh],
+    () => ({ loading, properties, pendingReferrals, totals, refresh }),
+    [loading, properties, pendingReferrals, totals, refresh],
   );
 
   return <AdminContext.Provider value={value}>{children}</AdminContext.Provider>;

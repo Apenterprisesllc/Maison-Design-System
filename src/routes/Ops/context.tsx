@@ -234,19 +234,24 @@ export function OpsProvider({ children }: { children: ReactNode }) {
     }) => {
       if (!profile) throw new Error('Not signed in.');
       if (!propertyId) throw new Error('No property in context.');
+      // The form passes the unit's external_id (e.g. "C-08"), but referrals.unit_id
+      // is a UUID FK — resolve it before inserting, like createBooking does.
+      const unitUuid = input.unit_id
+        ? raw.rawUnits.find((u) => u.row.external_id === input.unit_id)?.row.id ?? null
+        : null;
       const row = await apiCreateReferral({
         property_id: propertyId,
         referrer_id: profile.id,
         referred_name: input.referred_name,
         referred_phone: input.referred_phone,
-        unit_id: input.unit_id ?? null,
+        unit_id: unitUuid,
         suggested_service_id: input.suggested_service_id ?? null,
         note: input.note ?? null,
       });
       setReferrals((prev) => [row, ...prev]);
       return row;
     },
-    [profile, propertyId],
+    [profile, propertyId, raw.rawUnits],
   );
 
   // Defense-in-depth: managers shouldn't reach the mutating code paths (the

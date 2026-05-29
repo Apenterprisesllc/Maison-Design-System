@@ -703,6 +703,7 @@ export type Database = {
         | "booking_created"
         | "booking_status_changed"
         | "booking_cancelled"
+        | "referral_created"
         | "unit_invited"
         | "password_reset"
       referral_status:
@@ -862,6 +863,7 @@ export const Constants = {
         "booking_created",
         "booking_status_changed",
         "booking_cancelled",
+        "referral_created",
         "unit_invited",
         "password_reset",
       ],
