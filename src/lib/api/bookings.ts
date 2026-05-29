@@ -1,5 +1,9 @@
 import { supabase } from '../supabase';
 import type { BookingRow, BookingStatus, Json } from '../types/db';
+import { etDayBounds } from '../../utils/dateKey';
+
+/** Default ceiling for list queries so a runaway table can't be pulled whole. */
+const DEFAULT_LIST_LIMIT = 500;
 
 export interface ResidentSnapshot {
   full_name: string;
@@ -28,44 +32,64 @@ export interface CreateBookingParams {
   resident_snapshot: ResidentSnapshot;
 }
 
-export async function listBookingsForUser(userId: string): Promise<BookingRow[]> {
+export async function listBookingsForUser(
+  userId: string,
+  limit = DEFAULT_LIST_LIMIT,
+): Promise<BookingRow[]> {
+  const unitIds = await unitIdsForUser(userId);
+  // Bookings the user created, plus bookings on units they belong to. Build the
+  // `unit_id.in.(…)` clause only when there are units — an empty `in.()` is
+  // invalid PostgREST syntax.
+  const filter =
+    unitIds.length > 0
+      ? `created_by.eq.${userId},unit_id.in.(${unitIds.join(',')})`
+      : `created_by.eq.${userId}`;
   const { data, error } = await supabase
     .from('bookings')
     .select('*')
-    .or(`created_by.eq.${userId},unit_id.in.(${await unitIdsForUser(userId)})`)
-    .order('scheduled_at', { ascending: false });
+    .or(filter)
+    .order('scheduled_at', { ascending: false })
+    .limit(limit);
   if (error) throw error;
   return data ?? [];
 }
 
-async function unitIdsForUser(userId: string): Promise<string> {
+async function unitIdsForUser(userId: string): Promise<string[]> {
   const { data, error } = await supabase
     .from('unit_members')
     .select('unit_id')
     .eq('user_id', userId);
-  if (error) return '00000000-0000-0000-0000-000000000000';
-  const ids = (data ?? []).map((r) => r.unit_id);
-  if (ids.length === 0) return '00000000-0000-0000-0000-000000000000';
-  return ids.join(',');
+  // Propagate the failure rather than masking it as "no units", which would
+  // silently hide the user's own-created bookings behind an empty result.
+  if (error) throw error;
+  return (data ?? []).map((r) => r.unit_id);
 }
 
-export async function listBookingsForUnits(unitIds: string[]): Promise<BookingRow[]> {
+export async function listBookingsForUnits(
+  unitIds: string[],
+  limit = DEFAULT_LIST_LIMIT,
+): Promise<BookingRow[]> {
   if (unitIds.length === 0) return [];
   const { data, error } = await supabase
     .from('bookings')
     .select('*')
     .in('unit_id', unitIds)
-    .order('scheduled_at', { ascending: false });
+    .order('scheduled_at', { ascending: false })
+    .limit(limit);
   if (error) throw error;
   return data ?? [];
 }
 
-export async function listBookingsForProperty(propertyId: string): Promise<BookingRow[]> {
+export async function listBookingsForProperty(
+  propertyId: string,
+  limit = DEFAULT_LIST_LIMIT,
+): Promise<BookingRow[]> {
   const { data, error } = await supabase
     .from('bookings')
     .select('*')
     .eq('property_id', propertyId)
-    .order('scheduled_at', { ascending: false });
+    .order('scheduled_at', { ascending: false })
+    .limit(limit);
   if (error) throw error;
   return data ?? [];
 }
@@ -73,17 +97,16 @@ export async function listBookingsForProperty(propertyId: string): Promise<Booki
 /**
  * Returns the non-cancelled bookings for a given unit on a specific day.
  * Used to compute time-slot availability for the resident BookingFlow and
- * the Ops NewBookingModal. `date` is interpreted in local time; we query
- * `[date 00:00, date+1 00:00)` in ISO.
+ * the Ops NewBookingModal. The day is the *business-timezone* (ET) calendar
+ * day that `date` falls on, matching how slots are constructed and how the
+ * reporting RPCs bucket — so availability is correct regardless of the
+ * booker's browser timezone. We query `[ET 00:00, next ET 00:00)`.
  */
 export async function listBookingsForUnitDate(
   unitId: string,
   date: Date,
 ): Promise<BookingRow[]> {
-  const start = new Date(date);
-  start.setHours(0, 0, 0, 0);
-  const end = new Date(start);
-  end.setDate(end.getDate() + 1);
+  const { start, end } = etDayBounds(date);
 
   const { data, error } = await supabase
     .from('bookings')

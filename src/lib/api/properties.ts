@@ -127,43 +127,42 @@ export interface PropertyStats {
   manager_email: string | null;
 }
 
+interface PropertyStatRow {
+  property_id: string;
+  units_total: number;
+  units_active: number;
+  bookings_total: number;
+  bookings_active: number;
+  residents_total: number;
+  manager_email: string | null;
+}
+
 export async function listPropertiesWithStats(): Promise<PropertyStats[]> {
-  const [properties, units, bookings, members, managers] = await Promise.all([
+  // Stats are aggregated server-side (get_properties_with_stats) instead of
+  // pulling every unit/booking/member row and joining in JS. We still fetch the
+  // property rows for their full columns and merge by id.
+  const [properties, stats] = await Promise.all([
     supabase.from('properties').select('*').order('name'),
-    supabase.from('units').select('property_id, status'),
-    supabase.from('bookings').select('property_id, status'),
-    supabase.from('unit_members').select('user_id, unit_id, units!inner(property_id)'),
-    supabase
-      .from('profiles')
-      .select('email, primary_property_id')
-      .eq('role', 'property_manager'),
+    supabase.rpc('get_properties_with_stats'),
   ]);
 
   if (properties.error) throw properties.error;
-  if (units.error) throw units.error;
-  if (bookings.error) throw bookings.error;
-  if (members.error) throw members.error;
-  if (managers.error) throw managers.error;
+  if (stats.error) throw stats.error;
 
-  type UnitJoined = { units: { property_id: string } | null };
+  const byId = new Map<string, PropertyStatRow>(
+    ((stats.data ?? []) as PropertyStatRow[]).map((s) => [s.property_id, s]),
+  );
 
   return (properties.data ?? []).map((p) => {
-    const pUnits = (units.data ?? []).filter((u) => u.property_id === p.id);
-    const pBookings = (bookings.data ?? []).filter((b) => b.property_id === p.id);
-    const pMembers = ((members.data ?? []) as unknown as UnitJoined[]).filter(
-      (m) => m.units?.property_id === p.id,
-    );
-    const pManager = (managers.data ?? []).find((m) => m.primary_property_id === p.id);
+    const s = byId.get(p.id);
     return {
       property: p,
-      units_total: pUnits.length,
-      units_active: pUnits.filter((u) => u.status === 'active').length,
-      bookings_total: pBookings.length,
-      bookings_active: pBookings.filter((b) =>
-        ['scheduled', 'confirmed', 'enroute', 'active'].includes(b.status),
-      ).length,
-      residents_total: pMembers.length,
-      manager_email: pManager?.email ?? null,
+      units_total: s?.units_total ?? 0,
+      units_active: s?.units_active ?? 0,
+      bookings_total: s?.bookings_total ?? 0,
+      bookings_active: s?.bookings_active ?? 0,
+      residents_total: s?.residents_total ?? 0,
+      manager_email: s?.manager_email ?? null,
     };
   });
 }

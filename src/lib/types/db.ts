@@ -663,6 +663,18 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_properties_with_stats: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          property_id: string
+          units_total: number
+          units_active: number
+          bookings_total: number
+          bookings_active: number
+          residents_total: number
+          manager_email: string | null
+        }[]
+      }
       get_property_new_counts: {
         Args: Record<PropertyKey, never>
         Returns: { property_id: string; new_count: number }[]

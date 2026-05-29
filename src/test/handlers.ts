@@ -154,6 +154,35 @@ export const handlers = [
     return respondRows([row], request, 201);
   }),
 
+  // ─── RPC: get_properties_with_stats ───────────────────────────────────────
+  // Mirrors the 0016 migration: one aggregated row per property. Lets the admin
+  // console render against the in-memory store without a live database.
+  http.post(`${BASE}/rest/v1/rpc/get_properties_with_stats`, () => {
+    const store = getStore();
+    const active = ['scheduled', 'confirmed', 'enroute', 'active'];
+    const rows = [...store.properties]
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map((p) => {
+        const units = store.units.filter((u) => u.property_id === p.id);
+        const unitIds = new Set(units.map((u) => u.id));
+        const bookings = store.bookings.filter((b) => b.property_id === p.id);
+        const residents = store.unitMembers.filter((m) => unitIds.has(m.unit_id));
+        const manager = store.profiles.find(
+          (pr) => pr.role === 'property_manager' && pr.primary_property_id === p.id,
+        );
+        return {
+          property_id: p.id,
+          units_total: units.length,
+          units_active: units.filter((u) => u.status === 'active').length,
+          bookings_total: bookings.length,
+          bookings_active: bookings.filter((b) => active.includes(b.status)).length,
+          residents_total: residents.length,
+          manager_email: manager?.email ?? null,
+        };
+      });
+    return HttpResponse.json(rows as never);
+  }),
+
   // ─── REST: services ──────────────────────────────────────────────────────
 
   http.get(`${BASE}/rest/v1/services`, ({ request }) => {

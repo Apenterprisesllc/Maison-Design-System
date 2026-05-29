@@ -21,6 +21,7 @@ import {
   updateUnit as apiUpdateUnit,
 } from '../../lib/api/units';
 import { getProperty } from '../../lib/api/properties';
+import { etSlotToUtc } from '../../utils/dateKey';
 import { subscribeToPropertyBookings } from '../../lib/realtime/bookings';
 import { residentFullForUnit, residentSurnameForUnit, toOpsUnit } from '../../lib/mappers/unit';
 import type { UnitWithMembers } from '../../lib/mappers/unit';
@@ -133,8 +134,9 @@ function combineDateTime(dateLabel: string, time: string): Date {
   const meridian = m[3]?.toUpperCase();
   if (meridian === 'PM' && hour < 12) hour += 12;
   if (meridian === 'AM' && hour === 12) hour = 0;
-  base.setHours(hour, minute, 0, 0);
-  return base;
+  // Anchor to Florida time (ET) so the stored instant matches the resident/guest
+  // booking flow and the ET availability window, independent of browser timezone.
+  return etSlotToUtc(base, hour, minute);
 }
 
 interface RawState {

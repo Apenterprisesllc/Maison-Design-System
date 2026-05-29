@@ -10,6 +10,9 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
-    sourcemap: true,
+    // No sourcemaps in the deploy: there's no error-tracking service consuming
+    // them, so emitting ~2.6 MB of .map files only bloats the artifact. Flip to
+    // 'hidden' if a Sentry-style uploader is added later.
+    sourcemap: false,
   },
 });

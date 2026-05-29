@@ -19,6 +19,7 @@ import {
   type PublicProperty,
   type PublicService,
 } from '../../lib/api/guestBookings';
+import { etSlotToUtc } from '../../utils/dateKey';
 
 const SLOT_DEFINITIONS: TimeSlot[] = [
   { id: '0900', label: '9:00 AM' },
@@ -519,7 +520,7 @@ function Row({ label, value }: { label: string; value: string }) {
 function combineDateAndSlot(date: Date, slotId: string): Date {
   const h = Number(slotId.slice(0, 2));
   const m = Number(slotId.slice(2));
-  const out = new Date(date);
-  out.setHours(h, m, 0, 0);
-  return out;
+  // Anchor the slot to Florida time (ET) so "9:00 AM" books 9 AM ET regardless
+  // of the booker's browser timezone.
+  return etSlotToUtc(date, h, m);
 }
